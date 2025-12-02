@@ -1,0 +1,15 @@
+[package]
+name = "bun"
+version = "0.0.1"
+edition = "2021"
+
+[lib]
+name = "bun"
+path = "src/lib.rs"
+
+[dependencies]
+sdl3 = "0.16"
+gl = "0.14"
+glm = "0.3"
+num-traits = "0.2"
+image = "0.25.8"
