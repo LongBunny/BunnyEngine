@@ -4,7 +4,10 @@ layout (location = 0) in vec3 in_pos;
 layout (location = 1) in vec3 in_normal;
 layout (location = 2) in vec2 in_uv;
 
-uniform mat4 pvm;
+uniform mat4 proj_mat;
+uniform mat4 view_mat;
+uniform mat4 model_mat;
+
 uniform vec4 tint;
 
 out vec4 col;
@@ -12,7 +15,7 @@ out vec3 normal;
 out vec2 uv;
 
 void main() {
-    gl_Position = pvm * vec4(in_pos.xyz, 1.0);
+    gl_Position = proj_mat * view_mat * model_mat * vec4(in_pos.xyz, 1.0);
     col = vec4(1.0) * tint;
     normal = in_normal;
     uv = in_uv;

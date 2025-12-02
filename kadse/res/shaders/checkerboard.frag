@@ -3,6 +3,9 @@
 in vec4 col;
 in vec3 normal;
 in vec2 uv;
+in vec3 frag_pos;
+
+uniform vec3 camera_pos;
 
 out vec4 frag_col;
 

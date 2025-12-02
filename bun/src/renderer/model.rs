@@ -87,17 +87,23 @@ impl Model {
         Self { mesh, shader, transform: RefCell::new(transform), tint: Vec4::one() }
     }
     
-    pub fn render(&self, pv_mat: Mat4) {
+    pub fn render(&self, proj_mat: Mat4, view_mat: Mat4) {
         self.shader.borrow().bind();
         
-        let pvm_loc = self.shader_mut().get_uniform_location("pvm").unwrap();
-        self.shader().set_uniform(pvm_loc, pv_mat * self.transform().model_matrix());
+        let mut shader = self.shader.borrow_mut();
+        let proj_mat_loc = shader.get_uniform_location("proj_mat").unwrap();
+        let view_mat_loc = shader.get_uniform_location("view_mat").unwrap();
+        let model_mat_loc = shader.get_uniform_location("model_mat").unwrap();
         
-        {
-            let mut shader = self.shader.borrow_mut();
-            if let Some(tint_loc) = shader.get_uniform_location("tint") {
-                shader.set_uniform(tint_loc, self.tint);
-            }
+        shader.set_uniform(proj_mat_loc, proj_mat);
+        shader.set_uniform(view_mat_loc, view_mat);
+        shader.set_uniform(model_mat_loc, self.transform().model_matrix());
+        
+        if let Some(camera_pos_loc) = shader.get_uniform_location("camera_pos") {
+            shader.set_uniform(camera_pos_loc, self.transform().position);
+        }
+        if let Some(tint_loc) = shader.get_uniform_location("tint") {
+            shader.set_uniform(tint_loc, self.tint);
         }
         
         

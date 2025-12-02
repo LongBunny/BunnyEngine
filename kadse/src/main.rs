@@ -18,7 +18,6 @@ struct GameState {
     checkerboard_shader: Rc<RefCell<Shader>>,
     texture: Texture,
     floor: Model,
-    cube: Model,
     bunny: Model,
     speed: f32,
     rot_speed: f32,
@@ -40,28 +39,17 @@ impl GameState {
         let texture = Texture::new("kadse/res/textures/gltf_embedded_0.png")?;
 
         let quad_mesh = Rc::new(RefCell::new(Mesh::quad()));
-        let cube_mesh = Rc::new(RefCell::new(Mesh::cube()));
         let bunny_mesh = Rc::new(RefCell::new(Mesh::from_model(PathBuf::from(
             "kadse/res/models/rabbit.obj",
         ))?));
-
-        let cube = Model::with_transform(
-            cube_mesh.clone(),
-            default_shader.clone(),
-            Transform::new(
-                Vec3::new(0.0, 0.0, 0.0),
-                Vec3::new(20.0, 20.0, 20.0),
-                Vec3::new(0.0, 0.0, 0.0),
-            ),
-        );
 
         let bunny = Model::with_transform(
             bunny_mesh.clone(),
             default_shader.clone(),
             Transform::new(
-                Vec3::new(5.0, 0.0, -30.0),
-                Vec3::new(400.0, 400.0, 400.0),
-                Vec3::new(0.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 5.0),
+                Vec3::new(40.0, 40.0, 40.0),
+                Vec3::new(0.0, -90f32 * DEG_TO_RAD, 0.0),
             ),
         );
 
@@ -76,8 +64,8 @@ impl GameState {
         );
 
         let camera = Camera::new(
-            Vec3::new(0.0, 1.0, 5.0),
-            Vec3::new(0.0, -(PI * 0.5), 0.0),
+            Vec3::new(0.0, 1.0, 0.0),
+            Vec3::new(0.0, PI * 0.5, 0.0),
             70.0,
             engine.aspect_ratio(),
             0.01,
@@ -90,7 +78,6 @@ impl GameState {
             checkerboard_shader,
             texture,
             floor,
-            cube,
             bunny,
             speed: 4.0,
             rot_speed: 2.0,
@@ -235,9 +222,8 @@ impl App for KadseApp {
         }
 
         state.texture.bind();
-        state.floor.render(camera.pv_mat());
-        state.cube.render(camera.pv_mat());
-        state.bunny.render(camera.pv_mat());
+        state.floor.render(camera.projection(), camera.view());
+        state.bunny.render(camera.projection(), camera.view());
 
         if engine.aspect_ratio() > 0.0 {
             state.camera.set_aspect_ratio(engine.aspect_ratio());

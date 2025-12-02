@@ -11,7 +11,6 @@ pub struct Camera {
 
     proj_mat: Mat4,
     view_mat: Mat4,
-    pv_mat: Mat4,
 }
 
 impl Camera {
@@ -28,7 +27,6 @@ impl Camera {
             rotation,
             view_mat: Mat4::one(),
             proj_mat: Mat4::one(),
-            pv_mat: Mat4::one(),
             fov,
             aspect_ratio,
             near_clip,
@@ -36,7 +34,7 @@ impl Camera {
         };
 
         result.rebuild_projection();
-        result.calculate_pv_mat();
+        result.calculate_view_mat();
 
         result
     }
@@ -51,31 +49,25 @@ impl Camera {
 
     pub fn set_position(&mut self, position: Vec3) {
         self.position = position;
-        self.calculate_pv_mat();
+        self.calculate_view_mat();
     }
 
     pub fn set_rotation(&mut self, rotation: Vec3) {
         self.rotation = rotation;
-        self.calculate_pv_mat();
+        self.calculate_view_mat();
     }
 
     pub fn set_aspect_ratio(&mut self, aspect_ratio: f32) {
         self.aspect_ratio = aspect_ratio;
         self.rebuild_projection();
-        self.calculate_pv_mat();
+        self.calculate_view_mat();();
     }
 
-    pub fn view_mat(&self) -> Mat4 {
+    pub fn view(&self) -> Mat4 {
         self.view_mat
     }
 
-    pub fn pv_mat(&self) -> Mat4 {
-        self.pv_mat
-    }
-
-    pub fn projection(&self) -> Mat4 {
-        self.proj_mat
-    }
+    pub fn projection(&self) -> Mat4 { self.proj_mat }
 
     pub fn forward(&self) -> Vec3 {
         let forward = Vec3::new(
@@ -117,10 +109,5 @@ impl Camera {
 
     fn calculate_view_mat(&mut self) {
         self.view_mat = glm::ext::look_at(self.position, self.position + self.forward(), self.up());
-    }
-
-    fn calculate_pv_mat(&mut self) {
-        self.calculate_view_mat();
-        self.pv_mat = self.proj_mat * self.view_mat;
     }
 }
