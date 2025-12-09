@@ -269,6 +269,7 @@ fn load_from_obj<P>(path: P) -> Result<(Vec<Vertex>, Vec<u32>), String>
 where
     P: AsRef<Path>,
 {
+    println!("loading obj: {}", path.as_ref().to_string_lossy());
     let content = std::fs::read_to_string(path).unwrap();
     let mut positions: Vec<Vec3> = vec![];
     let mut normals: Vec<Vec3> = vec![];
@@ -343,8 +344,43 @@ where
                 
             } else if len == 4 {
                 // quad
+                let mut temp_indices: [u32; 4] = [0; 4];
                 
-                todo!();
+                for (i, split) in splits.iter().enumerate() {
+                    let parts: IVec3 = parse_obj_vector(&split.split('/').collect::<Vec<&str>>())?;
+                    let v_idx = (parts.x - 1) as u32;
+                    let vt_idx = (parts.y - 1) as u32;
+                    let vn_idx = (parts.z - 1) as u32;
+                    
+                    let key = (v_idx, vt_idx, vn_idx);
+                    let index = if let Some(&i) = lookup.get(&key) {
+                        // already has this face
+                        i
+                    } else {
+                        // add new face
+                        let vertex = Vertex {
+                            v: positions[v_idx as usize],
+                            vn: normals[vn_idx as usize],
+                            vt: uvs[vt_idx as usize],
+                        };
+                        
+                        let new_index = faces.len() as u32;
+                        faces.push(vertex);
+                        lookup.insert(key, new_index);
+                        
+                        new_index
+                    };
+                    
+                    temp_indices[i] = index;
+                }
+                
+                indices.push(temp_indices[0]);
+                indices.push(temp_indices[1]);
+                indices.push(temp_indices[2]);
+                
+                indices.push(temp_indices[0]);
+                indices.push(temp_indices[2]);
+                indices.push(temp_indices[3]);
             } else {
                 return Err(String::from("N-Gons are not supported"));
             }

@@ -157,7 +157,7 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
         gl::Enable(gl::MULTISAMPLE);
         gl::Enable(gl::LINE_SMOOTH);
         gl::Enable(gl::CULL_FACE);
-        gl::ClearColor(0.1, 0.3, 0.2, 1.0);
+        gl::ClearColor(189.0 / 255.0, 220.0 / 255.0, 237.0 / 255.0, 1.0);
 
         let version = CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8);
         println!("OpenGL version: {}", version.to_string_lossy());

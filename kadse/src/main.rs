@@ -1,16 +1,15 @@
-use bun::{
-    gl,
-    glm,
-    glm::Vec3,
-    run, App, AppConfig, AppControl, Camera, Engine, Mesh, Model, Shader, Texture, Transform,
-    Event, Keycode,
-};
+use bun::{gl, glm, glm::Vec3, run, App, AppConfig, AppControl, Camera, Engine, Mesh, Model, Shader, Texture, Transform, Event, Keycode, One, Zero};
 use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::path::PathBuf;
 use std::rc::Rc;
 
 const DEG_TO_RAD: f32 = PI / 180.0;
+
+struct PbrModel {
+    model: Model,
+    texture: Rc<RefCell<Texture>>
+}
 
 struct GameState {
     camera: Camera,
@@ -19,6 +18,9 @@ struct GameState {
     texture: Texture,
     floor: Model,
     bunny: Model,
+    
+    pbr_models: Vec<PbrModel>,
+    
     speed: f32,
     rot_speed: f32,
     t: f32,
@@ -42,12 +44,32 @@ impl GameState {
         let bunny_mesh = Rc::new(RefCell::new(Mesh::from_model(PathBuf::from(
             "kadse/res/models/rabbit.obj",
         ))?));
+        
+        let cube_mesh = Rc::new(RefCell::new(Mesh::from_model(PathBuf::from(
+            "kadse/res/models/TestCube/TestCube.obj"
+        ))?));
+        
+        let tex_wooden = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/D_Wooden.png")?));
+        let tex_terracotta = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/D_Terracotta.jpg")?));
+        let tex_sand = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Sand/D_StylizedSand.png")?));
+        let tex_pink_glass = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_PinkGlass/D_PinkGlass.jpg")?));
+        let tex_metal_bubbles = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_MetalBubbles/D_MetalBubbles.png")?));
+        let tex_cord_woven = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_CordWoven/D_CordWoven.png")?));
+        
+        let pbr_models = vec![
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(-7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_wooden.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(-4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_terracotta.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(-1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_sand.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_pink_glass.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_metal_bubbles.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_cord_woven.clone()},
+        ];
 
         let bunny = Model::with_transform(
             bunny_mesh.clone(),
             default_shader.clone(),
             Transform::new(
-                Vec3::new(0.0, 0.0, 5.0),
+                Vec3::new(0.0, 3.0, 12.5),
                 Vec3::new(40.0, 40.0, 40.0),
                 Vec3::new(0.0, -90f32 * DEG_TO_RAD, 0.0),
             ),
@@ -79,6 +101,7 @@ impl GameState {
             texture,
             floor,
             bunny,
+            pbr_models,
             speed: 4.0,
             rot_speed: 2.0,
             t: 0.0,
@@ -209,7 +232,6 @@ impl App for KadseApp {
             .bunny
             .transform_mut()
             .set_rotation(Vec3::new(rot.x, rot.y + 0.02, rot.z));
-
         state.t += dt;
     }
 
@@ -224,6 +246,11 @@ impl App for KadseApp {
         state.texture.bind();
         state.floor.render(camera.projection(), camera.view());
         state.bunny.render(camera.projection(), camera.view());
+        
+        for pbr_model in state.pbr_models.iter() {
+            pbr_model.texture.borrow().bind();
+            pbr_model.model.render(camera.projection(), camera.view());
+        }
 
         if engine.aspect_ratio() > 0.0 {
             state.camera.set_aspect_ratio(engine.aspect_ratio());

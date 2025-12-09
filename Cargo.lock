@@ -465,8 +465,6 @@ name = "kadse"
 version = "0.0.1"
 dependencies = [
  "bun",
- "glm",
- "num-traits",
 ]
 
 [[package]]

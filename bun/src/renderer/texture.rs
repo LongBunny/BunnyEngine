@@ -14,6 +14,7 @@ impl Texture {
     where
         P: AsRef<Path>,
     {
+        println!("loading texture: {}", path.as_ref().to_string_lossy());
         let image = image::open(path).unwrap();
         let image = image.flipv();
         let width = image.width() as i32;

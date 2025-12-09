@@ -13,3 +13,6 @@ pub use runtime::{run, App, AppConfig, AppControl, Engine, InputState};
 pub use sdl3::{self, event::Event, keyboard::Keycode};
 pub use gl;
 pub use glm;
+
+pub use num_traits::One;
+pub use num_traits::Zero;
