@@ -7,3 +7,13 @@ pub struct Vertex {
     pub vn: Vec3,
     pub vt: Vec2,
 }
+
+impl Vertex {
+    pub fn new(v: Vec3, vn: Vec3, vt: Vec2) -> Self {
+        Vertex {
+            v,
+            vn,
+            vt
+        }
+    }
+}

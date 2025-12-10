@@ -71,9 +71,9 @@ impl Camera {
 
     pub fn forward(&self) -> Vec3 {
         let forward = Vec3::new(
-            cos(self.rotation.y) * cos(self.rotation.x),
-            sin(self.rotation.x),
             sin(self.rotation.y) * cos(self.rotation.x),
+            sin(self.rotation.x),
+            cos(self.rotation.y) * cos(self.rotation.x),
         );
         normalize(forward)
     }

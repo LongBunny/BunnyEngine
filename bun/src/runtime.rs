@@ -19,7 +19,7 @@ pub trait App {
         AppControl::Continue
     }
 
-    fn update(&mut self, engine: &mut Engine, dt: f32);
+    fn update(&mut self, engine: &mut Engine, dt: Time);
     fn render(&mut self, engine: &mut Engine);
 }
 
@@ -40,6 +40,16 @@ impl Default for AppConfig {
             max_fps: Some(60),
         }
     }
+}
+
+pub struct Time {
+    dt: f32,
+    elapsed_secs: f32,
+}
+
+impl Time {
+    pub fn dt(&self) -> f32 { self.dt }
+    pub fn elapsed_secs(&self) -> f32 { self.elapsed_secs }
 }
 
 #[derive(Default)]
@@ -168,6 +178,7 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
 
     app.init(&mut engine)?;
 
+    let mut elapsed_secs = 0.0;
     let mut last_frame = Instant::now();
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -184,9 +195,10 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
 
         let now = Instant::now();
         let dt = (now - last_frame).as_secs_f32();
+        elapsed_secs += dt;
         last_frame = now;
 
-        app.update(&mut engine, dt);
+        app.update(&mut engine, Time { dt, elapsed_secs });
         app.render(&mut engine);
         engine.window.gl_swap_window();
 
