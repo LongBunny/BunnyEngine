@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use bun::renderer::mesh_data::MeshData;
 use bun::runtime::Time;
+use bun::sdl3::libc::stat;
 
 const DEG_TO_RAD: f32 = PI / 180.0;
 
@@ -18,7 +19,8 @@ struct GameState {
     default_shader: Rc<RefCell<Shader>>,
     checkerboard_shader: Rc<RefCell<Shader>>,
     pbr_shader: Rc<RefCell<Shader>>,
-    texture: Texture,
+    bunny_texture: Texture,
+    ground_texture: Texture,
     floor: Model,
     bunny: Model,
     
@@ -46,7 +48,7 @@ impl GameState {
             &PathBuf::from("kadse/res/shaders/checkerboard.frag"),
         )?));
 
-        let texture = Texture::new("kadse/res/textures/gltf_embedded_0.png")?;
+        let bunny_texture = Texture::new("kadse/res/textures/gltf_embedded_0.png")?;
 
         let quad_mesh = Rc::new(RefCell::new(Mesh::from_mesh_data(&MeshData::quad())));
         let bunny_mesh = Rc::new(RefCell::new(Mesh::from_model(PathBuf::from(
@@ -57,20 +59,21 @@ impl GameState {
             "kadse/res/models/TestCube/TestCube.obj"
         ))?));
         
-        // let tex_wooden = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/D_Wooden.png")?));
-        // let tex_terracotta = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/D_Terracotta.jpg")?));
-        // let tex_sand = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Sand/D_StylizedSand.png")?));
-        // let tex_pink_glass = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_PinkGlass/D_PinkGlass.jpg")?));
-        // let tex_metal_bubbles = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_MetalBubbles/D_MetalBubbles.png")?));
-        // let tex_cord_woven = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_CordWoven/D_CordWoven.png")?));
+        let tex_wooden = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/D_Wooden.png")?));
+        let tex_terracotta = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/D_Terracotta.jpg")?));
+        let tex_sand = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Sand/D_StylizedSand.png")?));
+        let tex_pink_glass = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_PinkGlass/D_PinkGlass.jpg")?));
+        let tex_metal_bubbles = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_MetalBubbles/D_MetalBubbles.png")?));
+        let tex_cord_woven = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_CordWoven/D_CordWoven.png")?));
+        let ground_texture = Texture::new("kadse/res/textures/Grass004_4K-JPG_Color.jpg")?;
         
         let pbr_models = vec![
-            // PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(-7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_wooden.clone()},
-            // PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(-4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_terracotta.clone()},
-            // PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(-1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_sand.clone()},
-            // PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_pink_glass.clone()},
-            // PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_metal_bubbles.clone()},
-            // PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_cord_woven.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(-7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_wooden.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(-4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_terracotta.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(-1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_sand.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_pink_glass.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_metal_bubbles.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_cord_woven.clone()},
         ];
 
         let bunny = Model::with_transform(
@@ -91,7 +94,7 @@ impl GameState {
         let subdiv_quad = Rc::new(RefCell::new(Mesh::from_mesh_data(&subdiv_quad_mesh_data)));
         let floor = Model::with_transform(
             subdiv_quad.clone(),
-            checkerboard_shader.clone(),
+            default_shader.clone(),
             Transform::new(
                 Vec3::new(0.0, -1.0, 0.0),
                 Vec3::new(50.0, 1.0, 50.0),
@@ -113,11 +116,12 @@ impl GameState {
             default_shader,
             checkerboard_shader,
             pbr_shader,
-            texture,
+            bunny_texture,
+            ground_texture,
             floor,
             bunny,
             pbr_models,
-            speed: 4.0,
+            speed: 7.0,
             rot_speed: 2.0,
             t: 0.0,
         })
@@ -193,6 +197,16 @@ impl GameState {
             self.camera
                 .set_position(self.camera.position() + glm::normalize(direction) * self.speed * dt);
         }
+        
+        {
+            let mouse_state = input.mouse_state();
+            let mut rot = self.camera.rotation();
+            rot.y -= mouse_state.pos().x * self.rot_speed * 15.0 * dt;
+            rot.x -= mouse_state.pos().y * self.rot_speed * 15.0 * dt;
+            rot.x = rot.x.min(DEG_TO_RAD * 89.0).max(-DEG_TO_RAD * 89.0);
+            self.camera.set_rotation(rot);
+        }
+        // println!("mouse_state: pos {:?}, prev_pos {:?}", input.mouse_state().pos(), input.mouse_state().prev_pos());
     }
 }
 
@@ -268,15 +282,29 @@ impl App for KadseApp {
         unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
-
-        state.texture.bind();
-        state.floor.render(camera.projection(), camera.view());
-        state.bunny.render(camera.projection(), camera.view());
         
         for pbr_model in state.pbr_models.iter() {
             pbr_model.texture.borrow().bind();
             pbr_model.model.render(camera.projection(), camera.view());
         }
+        
+        state.ground_texture.bind();
+        let texture_scale_loc = {
+            state.floor.shader_mut().get_uniform_location("texture_scale").unwrap()
+        };
+        state.floor.shader().set_uniform(texture_scale_loc, 1.0);
+        state.floor.render(camera.projection(), camera.view());
+        state.ground_texture.unbind();
+
+        state.bunny_texture.bind();
+        let texture_scale_loc = {
+            state.bunny.shader_mut().get_uniform_location("texture_scale").unwrap()
+        };
+        state.bunny.shader().set_uniform(texture_scale_loc, 1.0);
+        state.bunny.render(camera.projection(), camera.view());
+        state.bunny_texture.unbind();
+        
+        
 
         if engine.aspect_ratio() > 0.0 {
             state.camera.set_aspect_ratio(engine.aspect_ratio());

@@ -4,6 +4,9 @@ use sdl3::video::Window;
 use std::collections::HashSet;
 use std::ffi::{c_void, CStr};
 use std::time::{Duration, Instant};
+use glm::Vec2;
+use num_traits::Zero;
+use sdl3::keyboard::Keycode::Hash;
 
 pub enum AppControl {
     Continue,
@@ -52,12 +55,19 @@ impl Time {
     pub fn elapsed_secs(&self) -> f32 { self.elapsed_secs }
 }
 
-#[derive(Default)]
 pub struct InputState {
     keys_down: HashSet<Keycode>,
+    mouse_state: MouseState,
 }
 
 impl InputState {
+    pub fn new(window_size: Vec2) -> Self {
+        Self {
+            keys_down: HashSet::default(),
+            mouse_state: MouseState::new(window_size),
+        }
+    }
+    
     pub fn is_down(&self, key: Keycode) -> bool {
         self.keys_down.contains(&key)
     }
@@ -65,6 +75,36 @@ impl InputState {
     pub fn pressed_keys(&self) -> impl Iterator<Item = &Keycode> {
         self.keys_down.iter()
     }
+    
+    pub fn mouse_state(&self) -> &MouseState { &self.mouse_state }
+}
+
+
+pub struct MouseState {
+    pos: Vec2,
+    prev_pos: Vec2,
+    
+    window_size: Vec2,
+}
+
+impl MouseState {
+    pub fn new(window_size: Vec2) -> Self {
+        Self {
+            pos: Vec2::zero(),
+            prev_pos: Vec2::zero(),
+            window_size
+        }
+    }
+    
+    pub fn update_window_size(&mut self, window_size: Vec2) {
+        self.window_size = window_size;
+    }
+    
+    pub fn pos(&self) -> Vec2 { (self.pos / self.window_size) * 2.0 - 1.0 }
+    pub fn pos_pixel(&self) -> Vec2 { self.pos }
+    
+    pub fn prev_pos(&self) -> Vec2 { (self.prev_pos / self.window_size) * 2.0 - 1.0 }
+    pub fn prev_pos_pixel(&self) -> Vec2 { self.prev_pos }
 }
 
 pub struct Engine {
@@ -76,9 +116,11 @@ pub struct Engine {
 
 impl Engine {
     pub(crate) fn new(window: Window, aspect_ratio: f32) -> Self {
+        let window_size = window.size();
+        let window_size = Vec2::new(window_size.0 as f32, window_size.1 as f32);
         Self {
             window,
-            input: InputState::default(),
+            input: InputState::new(window_size),
             aspect_ratio,
             should_close: false,
         }
@@ -130,6 +172,15 @@ impl Engine {
                     gl::Viewport(0, 0, *w, *h);
                 }
                 self.aspect_ratio = *w as f32 / *h as f32;
+                self.input.mouse_state.update_window_size(Vec2::new(*w as f32, *h as f32))
+            }
+            Event::MouseMotion {
+                x, y, xrel, yrel,
+                ..
+            } => {
+                // println!("x: {}, y: {}, xrel: {}, yrel: {}", x, y, xrel, yrel);
+                self.input.mouse_state.prev_pos = self.input.mouse_state.pos.clone();
+                self.input.mouse_state.pos = Vec2::new(*x, *y);
             }
             _ => {}
         }
@@ -175,6 +226,8 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
 
     let mut engine = Engine::new(window, config.width as f32 / config.height as f32);
     let mut event_pump = sdl_context.event_pump().map_err(|e| e.to_string())?;
+    // sdl_context.mouse().relative_mouse_mode(engine.window());
+    sdl_context.mouse().warp_mouse_in_window(&engine.window, config.width as f32 / 2.0, config.height as f32 / 2.0);
 
     app.init(&mut engine)?;
 
@@ -192,6 +245,8 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
                 engine.request_close();
             }
         }
+        
+        sdl_context.mouse().warp_mouse_in_window(&engine.window, config.width as f32 / 2.0, config.height as f32 / 2.0);
 
         let now = Instant::now();
         let dt = (now - last_frame).as_secs_f32();

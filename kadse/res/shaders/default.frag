@@ -1,26 +1,28 @@
 #version 460
 
-in vec4 col;
-in vec3 normal;
-in vec2 uv;
+in vec4 frag_col;
+in vec3 frag_normal;
+in vec2 frag_uv;
 in vec3 frag_pos;
 
 uniform sampler2D u_texture;
 uniform vec3 camera_pos;
+uniform float texture_scale = 1.0;
 
-out vec4 frag_col;
+out vec4 out_col;
 
 void main() {
+    vec2 uv = fract(frag_uv * texture_scale);
     vec3 directional_light = vec3(1.0, -1.0, 1.0);
     vec3 light_dir = normalize(-directional_light);
     vec3 light_color = vec3(1.0, 1.0, 1.0);
     vec3 ambient_color = vec3(1.0, 1.0, 1.0);
     float ambient_strength = 0.025;
     vec3 specular_color = vec3(1.0, 1.0, 1.0);
-    vec3 surface_normal = normalize(normal);
+    vec3 surface_normal = normalize(frag_normal);
     float specular_shinyness = 32f;
 
-    vec3 color = (texture(u_texture, uv) * col).xyz;
+    vec3 color = (texture(u_texture, uv) * frag_col).xyz;
 
     // ambient
     vec3 ambient = color * ambient_strength * ambient_color;
@@ -40,5 +42,5 @@ void main() {
 
     // combine
     vec3 result = ambient + diffuse + specular;
-    frag_col = vec4(result, 1.0);
+    out_col = vec4(result, 1.0);
 }

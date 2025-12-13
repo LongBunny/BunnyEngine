@@ -10,18 +10,18 @@ uniform mat4 model_mat;
 
 uniform vec4 tint;
 
-out vec4 col;
-out vec3 normal;
-out vec2 uv;
+out vec4 frag_col;
+out vec3 frag_normal;
+out vec2 frag_uv;
 out vec3 frag_pos;
 
 void main() {
     gl_Position = proj_mat * view_mat * model_mat * vec4(in_pos.xyz, 1.0);
-    col = vec4(1.0) * tint;
+    frag_col = vec4(1.0) * tint;
 
     mat3 normal_mat = transpose(inverse(mat3(model_mat)));
-    normal = normalize(normal_mat * in_normal);
+    frag_normal = normalize(normal_mat * in_normal);
 
-    uv = in_uv;
+    frag_uv = in_uv;
     frag_pos = vec3(model_mat * vec4(in_pos, 1.0));
 }
