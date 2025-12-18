@@ -246,7 +246,7 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
             }
         }
         
-        sdl_context.mouse().warp_mouse_in_window(&engine.window, config.width as f32 / 2.0, config.height as f32 / 2.0);
+        // sdl_context.mouse().warp_mouse_in_window(&engine.window, config.width as f32 / 2.0, config.height as f32 / 2.0);
 
         let now = Instant::now();
         let dt = (now - last_frame).as_secs_f32();

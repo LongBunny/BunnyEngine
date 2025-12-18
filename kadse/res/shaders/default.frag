@@ -8,6 +8,7 @@ in vec3 frag_pos;
 uniform sampler2D u_texture;
 uniform vec3 camera_pos;
 uniform float texture_scale = 1.0;
+uniform float specular_intensity = 1.0;
 
 out vec4 out_col;
 
@@ -20,7 +21,7 @@ void main() {
     float ambient_strength = 0.025;
     vec3 specular_color = vec3(1.0, 1.0, 1.0);
     vec3 surface_normal = normalize(frag_normal);
-    float specular_shinyness = 32f;
+    float specular_shinyness = 256f;
 
     vec3 color = (texture(u_texture, uv) * frag_col).xyz;
 
@@ -38,7 +39,7 @@ void main() {
         max(dot(surface_normal, halfway_dir), 0.0),
         specular_shinyness
     );
-    vec3 specular = specular_color * specular_strength;
+    vec3 specular = specular_color * specular_strength * specular_intensity;
 
     // combine
     vec3 result = ambient + diffuse + specular;

@@ -2,6 +2,7 @@ use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 use glm::{Mat4, Vec3, Vec4};
 use num_traits::{One, Zero};
+use crate::Camera;
 use crate::renderer::mesh::Mesh;
 use crate::renderer::shader::Shader;
 
@@ -71,6 +72,7 @@ pub struct Model {
     
     transform: RefCell<Transform>,
     tint: Vec4,
+    specular_strength: f32,
 }
 
 impl Model {
@@ -79,15 +81,16 @@ impl Model {
             mesh,
             shader,
             transform: RefCell::new(Transform::new(Vec3::zero(), Vec3::one(), Vec3::zero())),
-            tint: Vec4::one()
+            tint: Vec4::one(),
+            specular_strength: 1.0,
         }
     }
     
     pub fn with_transform(mesh: Rc<RefCell<Mesh>>, shader: Rc<RefCell<Shader>>, transform: Transform) -> Self {
-        Self { mesh, shader, transform: RefCell::new(transform), tint: Vec4::one() }
+        Self { mesh, shader, transform: RefCell::new(transform), tint: Vec4::one(), specular_strength: 1.0 }
     }
     
-    pub fn render(&self, proj_mat: Mat4, view_mat: Mat4) {
+    pub fn render(&self, proj_mat: Mat4, camera: &Camera) {
         self.shader.borrow().bind();
         
         let mut shader = self.shader.borrow_mut();
@@ -96,11 +99,14 @@ impl Model {
         let model_mat_loc = shader.get_uniform_location("model_mat").unwrap();
         
         shader.set_uniform(proj_mat_loc, proj_mat);
-        shader.set_uniform(view_mat_loc, view_mat);
+        shader.set_uniform(view_mat_loc, camera.view());
         shader.set_uniform(model_mat_loc, self.transform().model_matrix());
         
         if let Some(camera_pos_loc) = shader.get_uniform_location("camera_pos") {
-            shader.set_uniform(camera_pos_loc, self.transform().position);
+            shader.set_uniform(camera_pos_loc, camera.position());
+        }
+        if let Some(camera_pos_loc) = shader.get_uniform_location("specular_intensity") {
+            shader.set_uniform(camera_pos_loc, self.specular_strength);
         }
         if let Some(tint_loc) = shader.get_uniform_location("tint") {
             shader.set_uniform(tint_loc, self.tint);
@@ -125,6 +131,10 @@ impl Model {
     pub fn set_tint(&mut self, tint: Vec4) {
         self.tint = tint
     }
+    
+    pub fn specular_strength(&self) -> f32 { self.specular_strength }
+    
+    pub fn set_specular_strength(&mut self, specular_strength: f32) { self.specular_strength = specular_strength }
     
     pub fn mesh(&self) -> Ref<'_, Mesh> {
         self.mesh.borrow()

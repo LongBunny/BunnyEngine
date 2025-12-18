@@ -68,12 +68,12 @@ impl GameState {
         let ground_texture = Texture::new("kadse/res/textures/Grass004_4K-JPG_Color.jpg")?;
         
         let pbr_models = vec![
-            PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(-7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_wooden.clone()},
-            PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(-4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_terracotta.clone()},
-            PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(-1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_sand.clone()},
-            PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_pink_glass.clone()},
-            PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_metal_bubbles.clone()},
-            PbrModel {model: Model::with_transform(cube_mesh.clone(), pbr_shader.clone(), Transform::new(Vec3::new(7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_cord_woven.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(-7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_wooden.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(-4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_terracotta.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(-1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_sand.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_pink_glass.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_metal_bubbles.clone()},
+            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_cord_woven.clone()},
         ];
 
         let bunny = Model::with_transform(
@@ -92,7 +92,7 @@ impl GameState {
             vertex.v.y += (fastrand::f32() * 2.0 - 1.0);
         }
         let subdiv_quad = Rc::new(RefCell::new(Mesh::from_mesh_data(&subdiv_quad_mesh_data)));
-        let floor = Model::with_transform(
+        let mut floor = Model::with_transform(
             subdiv_quad.clone(),
             default_shader.clone(),
             Transform::new(
@@ -101,6 +101,7 @@ impl GameState {
                 Vec3::new(0.0, 0.0, 0.0),
             ),
         );
+        floor.set_specular_strength(0.0);
 
         let camera = Camera::new(
             Vec3::new(0.0, 1.0, 0.0),
@@ -198,14 +199,15 @@ impl GameState {
                 .set_position(self.camera.position() + glm::normalize(direction) * self.speed * dt);
         }
         
-        {
-            let mouse_state = input.mouse_state();
-            let mut rot = self.camera.rotation();
-            rot.y -= mouse_state.pos().x * self.rot_speed * 15.0 * dt;
-            rot.x -= mouse_state.pos().y * self.rot_speed * 15.0 * dt;
-            rot.x = rot.x.min(DEG_TO_RAD * 89.0).max(-DEG_TO_RAD * 89.0);
-            self.camera.set_rotation(rot);
-        }
+        // shitty mouse movement
+        // {
+        //     let mouse_state = input.mouse_state();
+        //     let mut rot = self.camera.rotation();
+        //     rot.y -= mouse_state.pos().x * self.rot_speed * 15.0 * dt;
+        //     rot.x -= mouse_state.pos().y * self.rot_speed * 15.0 * dt;
+        //     rot.x = rot.x.min(DEG_TO_RAD * 89.0).max(-DEG_TO_RAD * 89.0);
+        //     self.camera.set_rotation(rot);
+        // }
         // println!("mouse_state: pos {:?}, prev_pos {:?}", input.mouse_state().pos(), input.mouse_state().prev_pos());
     }
 }
@@ -285,7 +287,7 @@ impl App for KadseApp {
         
         for pbr_model in state.pbr_models.iter() {
             pbr_model.texture.borrow().bind();
-            pbr_model.model.render(camera.projection(), camera.view());
+            pbr_model.model.render(camera.projection(), camera);
         }
         
         state.ground_texture.bind();
@@ -293,7 +295,7 @@ impl App for KadseApp {
             state.floor.shader_mut().get_uniform_location("texture_scale").unwrap()
         };
         state.floor.shader().set_uniform(texture_scale_loc, 1.0);
-        state.floor.render(camera.projection(), camera.view());
+        state.floor.render(camera.projection(), camera);
         state.ground_texture.unbind();
 
         state.bunny_texture.bind();
@@ -301,7 +303,7 @@ impl App for KadseApp {
             state.bunny.shader_mut().get_uniform_location("texture_scale").unwrap()
         };
         state.bunny.shader().set_uniform(texture_scale_loc, 1.0);
-        state.bunny.render(camera.projection(), camera.view());
+        state.bunny.render(camera.projection(), camera);
         state.bunny_texture.unbind();
         
         

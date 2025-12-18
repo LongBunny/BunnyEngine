@@ -81,6 +81,7 @@ impl Shader {
         let vertex = Self::create_shader(ShaderType::Vertex, &self.vertex_path)?;
         let fragment = Self::create_shader(ShaderType::Fragment, &self.fragment_path)?;
         self.id = Self::create_program(vertex, fragment)?;
+        self.uniforms.clear();
         
         Ok(())
     }
