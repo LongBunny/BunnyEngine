@@ -64,8 +64,10 @@ impl GameState {
         let cube_mat = Arc::new(Material {
             shader: pbr_shader.clone(),
             albedo: MaterialProperty::Texture(cube_albedo.clone()),
+            // albedo: MaterialProperty::Color(Vec3::new(1.0, 0.0, 1.0)),
             metallic: MaterialProperty::Texture(cube_metallic.clone()),
             normal: NormalMap::Texture {texture: cube_normal.clone(), scale: 1.0},
+            // normal: NormalMap::None,
             roughness: MaterialProperty::Texture(cube_roughness.clone()),
             ..Default::default()
         });
@@ -101,29 +103,10 @@ impl GameState {
     fn reload_shaders(&mut self) {
         println!("Reloading shaders");
         
-        // match self.cube.material().shader.reload() {
-        //     Ok(_) => println!("default_shader reloaded!"),
-        //     Err(e) => eprintln!("default_shader compilation failed: {}", e),
-        // }
-        
-        
-        // self.default_shader.borrow().unbind();
-        // match self.default_shader.borrow_mut().reload() {
-        //     Ok(_) => println!("default_shader reloaded!"),
-        //     Err(e) => eprintln!("default_shader compilation failed: {}", e),
-        // }
-        //
-        // self.checkerboard_shader.borrow().unbind();
-        // match self.checkerboard_shader.borrow_mut().reload() {
-        //     Ok(_) => println!("checkerboard_shader reloaded!"),
-        //     Err(e) => eprintln!("checkerboard_shader compilation failed: {}", e),
-        // }
-        //
-        // self.pbr_shader.borrow().unbind();
-        // match self.pbr_shader.borrow_mut().reload() {
-        //     Ok(_) => println!("pbr_shader reloaded!"),
-        //     Err(e) => eprintln!("pbr_shader compilation failed: {}", e),
-        // }
+        match self.cube.material().shader.reload() {
+            Ok(_) => println!("cube.material().shader reloaded!"),
+            Err(e) => eprintln!("cube.material().shader compilation failed: {}", e),
+        }
     }
 
     fn handle_movement(&mut self, engine: &Engine, dt: f32) {

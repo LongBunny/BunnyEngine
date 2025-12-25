@@ -38,6 +38,7 @@ impl Renderer {
         self.set_camera_uniforms(camera, material.shader.as_ref());
         self.set_model_uniforms(&object.transform(), material.shader.as_ref());
         
+        
         material.apply();
         
         object.mesh().render();

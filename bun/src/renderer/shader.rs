@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::ffi::CString;
 use std::path::PathBuf;
@@ -9,7 +9,7 @@ pub trait UniformValue {
 }
 
 pub struct Shader {
-    id: u32,
+    id: Cell<u32>,
     
     uniforms: RefCell<HashMap<String, i32>>,
     vertex_path: Option<PathBuf>,
@@ -29,7 +29,7 @@ impl Shader {
         let program = Self::create_program(vertex, fragment)?;
 
         Ok(Self {
-            id: program,
+            id: Cell::new(program),
             uniforms: RefCell::new(HashMap::new()),
             vertex_path: Some(vertex_path.clone()),
             fragment_path: Some(fragment_path.clone()),
@@ -43,7 +43,7 @@ impl Shader {
         let program = Self::create_program(vertex, fragment)?;
         
         Ok(Self {
-            id: program,
+            id: Cell::new(program),
             uniforms: RefCell::new(HashMap::new()),
             vertex_path: None,
             fragment_path: None,
@@ -51,12 +51,12 @@ impl Shader {
     }
 
     pub fn id(&self) -> u32 {
-        self.id
+        self.id.get()
     }
 
     pub fn bind(&self) {
         unsafe {
-            gl::UseProgram(self.id);
+            gl::UseProgram(self.id.get());
         }
     }
     
@@ -73,7 +73,7 @@ impl Shader {
         
         let location = unsafe {
             let c_name = CString::new(name).unwrap();
-            gl::GetUniformLocation(self.id, c_name.as_ptr())
+            gl::GetUniformLocation(self.id.get(), c_name.as_ptr())
         };
         
         if location == -1 {
@@ -90,7 +90,7 @@ impl Shader {
     }
     
     
-    pub fn reload(&mut self) -> Result<(), String> {
+    pub fn reload(&self) -> Result<(), String> {
         if self.vertex_path == None || self.fragment_path == None {
             return Err("No shader source".to_string());
         }
@@ -100,9 +100,9 @@ impl Shader {
         let fragment = Self::create_shader(ShaderType::Fragment, &fragment_path)?;
         let new_id = Self::create_program(vertex, fragment)?;
         unsafe {
-            gl::DeleteProgram(self.id);
+            gl::DeleteProgram(self.id.get());
         }
-        self.id = new_id;
+        self.id.set(new_id);
         
         let mut uniforms = self.uniforms.borrow_mut();
         uniforms.clear();
@@ -180,7 +180,7 @@ impl Default for Shader {
 impl Drop for Shader {
     fn drop(&mut self) {
         unsafe {
-            gl::DeleteProgram(self.id);
+            gl::DeleteProgram(self.id.get());
         }
     }
 }

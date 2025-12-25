@@ -1,3 +1,4 @@
+use std::ptr::null;
 
 #[derive(Copy, Clone, Debug)]
 pub enum BufferUsage {
@@ -26,6 +27,8 @@ impl<const TARGET: u32> Buffer<TARGET> {
         unsafe { gl::GenBuffers(1, &mut id) }
         Self { id }
     }
+    
+    pub fn id(&self) -> u32 { self.id }
 
     pub fn bind(&self) {
         unsafe { gl::BindBuffer(TARGET, self.id) }
@@ -33,6 +36,17 @@ impl<const TARGET: u32> Buffer<TARGET> {
 
     pub fn unbind(&self) {
         unsafe { gl::BindBuffer(TARGET, 0) }
+    }
+    
+    pub fn prepare_data<T>(&self) {
+        unsafe {
+            gl::BufferData(
+                TARGET,
+                size_of::<T>() as isize,
+                null(),
+                BufferUsage::DynamicDraw.to_gl()
+            )
+        }
     }
     
     pub fn buffer_data<T>(&self, data: &[T]) {
