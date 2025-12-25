@@ -1,9 +1,9 @@
 #version 460
 
 in vec4 frag_col;
-in vec3 frag_normal;
 in vec2 frag_uv;
 in vec3 frag_pos;
+in mat3 frag_tbn;
 
 layout(binding = 0) uniform sampler2D tex_albedo;
 layout(binding = 1) uniform sampler2D tex_normal;
@@ -36,14 +36,16 @@ void main() {
     vec3 ambient_color = vec3(1.0, 1.0, 1.0);
     float ambient_strength = 0.025;
     vec3 specular_color = vec3(1.0, 1.0, 1.0);
-    vec3 surface_normal = normalize(frag_normal);
+
+    vec3 surface_normal = normalize(frag_tbn[2]);
     if (normal_has_texture == 1) {
         vec3 n = texture(tex_normal, uv).xyz;
         n = n * 2.0 - 1.0;
         n.xy *= normal_scale;
-        surface_normal = normalize(frag_normal * n);
+        surface_normal = normalize(frag_tbn * n);
     }
-    float specular_shinyness = 256f;
+
+    float specular_shinyness = 48f;
 
     vec3 color = albedo_has_texture == 1
         ? (texture(tex_albedo, uv) * frag_col).xyz
@@ -68,4 +70,5 @@ void main() {
     // combine
     vec3 result = ambient + diffuse + specular;
     out_col = vec4(result, 1.0);
+//    out_col = vec4(normalize(surface_normal) * 0.5 + 0.5, 1.0);
 }

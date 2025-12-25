@@ -9,8 +9,33 @@ pub struct Texture {
     height: i32,
 }
 
+pub struct ImageData {
+    pub width: i32,
+    pub height: i32,
+    pub channels: u8,
+    pub data: Vec<u8>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum TextureUsage {
+    Albedo,      // color, sRGB
+    Normal,      // vector data, linear
+    Data,        // roughness, metallic, AO, etc. (linear)
+    Emissive,    // usually sRGB
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct TextureSpec {
+    pub usage: TextureUsage,
+    pub min_filter: u32,
+    pub mag_filter: u32,
+    pub wrap_s: u32,
+    pub wrap_t: u32,
+    pub generate_mipmaps: bool,
+}
+
 impl Texture {
-    pub fn new<P>(path: P) -> Result<Self, String>
+    pub fn new<P>(path: P, spec: TextureSpec) -> Result<Self, String>
     where
         P: AsRef<Path>,
     {
@@ -18,36 +43,20 @@ impl Texture {
         println!("loading texture: {}", file_name);
         let image = image::open(path).unwrap();
         let image = image.flipv();
-        let width = image.width() as i32;
-        let height = image.height() as i32;
-        let data = image.to_rgba8();
-
-        let texture_id = Self::create_rgba8(width, height, &data)?;
-
-        Ok(Self {
+        
+        let rgba = image.to_rgba8();
+        let width = rgba.width() as i32;
+        let height = rgba.height() as i32;
+        
+        let image_data = ImageData {
             width,
             height,
-            texture_id
-        })
-    }
-    
-    /// not really working rn
-    pub fn from_color(color: Vec3) -> Result<Self, String> {
-        let width = 1;
-        let height = 1;
-        if color.x < 0.0 || color.x > 1.0
-            || color.y < 0.0 || color.y > 1.0
-            || color.z < 0.0 || color.z > 1.0 {
-            return Err(String::from(format!("Color has to be in range 0..1: Color: {:?}", color)));
-        }
-        let r = (color.x * 255.0) as u8;
-        let g = (color.y * 255.0) as u8;
-        let b = (color.z * 255.0) as u8;
-        let a = 255u8;
-        let data: [u8; 4] = [r, g, b, a];
-        
-        let texture_id = Self::create_rgba8(width, height, &data)?;
-        
+            channels: 4,
+            data: rgba.into_raw(),
+        };
+
+        let texture_id = Self::create_texture(image_data, spec)?;
+
         Ok(Self {
             width,
             height,
@@ -73,34 +82,27 @@ impl Texture {
         }
     }
     
-    fn create_rgba8(width: i32, height: i32, data: &[u8]) -> Result<u32, String> {
+    fn create_texture(image_data: ImageData, spec: TextureSpec) -> Result<u32, String> {
         let mut texture_id: u32 = 0;
         unsafe {
             gl::GenTextures(1, &mut texture_id);
             gl::BindTexture(gl::TEXTURE_2D, texture_id);
             
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_WRAP_S,
-                gl::REPEAT as GLint,
-            );
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_WRAP_T,
-                gl::REPEAT as GLint,
-            );
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, spec.min_filter as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, spec.mag_filter as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, spec.wrap_s as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, spec.wrap_t as i32);
             gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
             gl::TexImage2D(
                 gl::TEXTURE_2D,
                 0,
-                gl::RGBA as GLint,
-                width,
-                height,
+                spec.internal_format(true) as GLint,
+                image_data.width,
+                image_data.height,
                 0,
                 gl::RGBA,
                 gl::UNSIGNED_BYTE,
-                data.as_ptr() as *const c_void,
+                image_data.data.as_ptr() as *const c_void,
             );
             
             gl::GenerateMipmap(gl::TEXTURE_2D);
@@ -120,5 +122,81 @@ impl Drop for Texture {
         unsafe {
             gl::DeleteTextures(1, [self.texture_id].as_ptr());
         }
+    }
+}
+
+
+impl TextureSpec {
+    pub fn albedo() -> Self {
+        Self {
+            usage: TextureUsage::Albedo,
+            min_filter: gl::LINEAR_MIPMAP_LINEAR,
+            mag_filter: gl::LINEAR,
+            wrap_s: gl::REPEAT,
+            wrap_t: gl::REPEAT,
+            generate_mipmaps: true,
+        }
+    }
+    
+    pub fn normal() -> Self {
+        Self {
+            usage: TextureUsage::Normal,
+            min_filter: gl::LINEAR_MIPMAP_LINEAR,
+            mag_filter: gl::LINEAR,
+            wrap_s: gl::REPEAT,
+            wrap_t: gl::REPEAT,
+            generate_mipmaps: true,
+        }
+    }
+    
+    pub fn data() -> Self {
+        Self {
+            usage: TextureUsage::Data,
+            min_filter: gl::LINEAR_MIPMAP_LINEAR,
+            mag_filter: gl::LINEAR,
+            wrap_s: gl::REPEAT,
+            wrap_t: gl::REPEAT,
+            generate_mipmaps: true,
+        }
+    }
+    
+    pub fn emissive() -> Self {
+        Self {
+            usage: TextureUsage::Emissive,
+            min_filter: gl::LINEAR_MIPMAP_LINEAR,
+            mag_filter: gl::LINEAR,
+            wrap_s: gl::REPEAT,
+            wrap_t: gl::REPEAT,
+            generate_mipmaps: true,
+        }
+    }
+    
+    pub fn internal_format(&self, has_alpha: bool) -> u32 {
+        match self.usage {
+            TextureUsage::Albedo | TextureUsage::Emissive => {
+                if has_alpha {
+                    gl::SRGB8_ALPHA8
+                } else {
+                    gl::SRGB8
+                }
+            }
+            TextureUsage::Normal | TextureUsage::Data => {
+                if has_alpha {
+                    gl::RGBA8
+                } else {
+                    gl::RGB8
+                }
+            }
+        }
+    }
+}
+
+fn pixel_format(channels: u8) -> u32 {
+    match channels {
+        1 => gl::RED,
+        2 => gl::RG,
+        3 => gl::RGB,
+        4 => gl::RGBA,
+        _ => panic!("Unsupported channel count"),
     }
 }

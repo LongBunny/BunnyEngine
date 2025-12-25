@@ -7,6 +7,7 @@ use bun::{glm, glm::Vec3, Camera, Event, Keycode, Mesh, One, Shader, Texture, Tr
 use std::f32::consts::PI;
 use std::path::PathBuf;
 use std::sync::Arc;
+use bun::renderer::texture::TextureSpec;
 
 const DEG_TO_RAD: f32 = PI / 180.0;
 
@@ -29,7 +30,7 @@ impl GameState {
             &PathBuf::from("kadse/res/shaders/default.frag"),
         )?);
         
-        let bunny_texture = Arc::new(Texture::new("kadse/res/textures/gltf_embedded_0.png")?);
+        let bunny_texture = Arc::new(Texture::new("kadse/res/textures/gltf_embedded_0.png", TextureSpec::albedo())?);
         let bunny_mat = Arc::new(Material {
             shader: default_shader.clone(),
             albedo: MaterialProperty::Texture(bunny_texture.clone()),
@@ -53,10 +54,16 @@ impl GameState {
         let cube_mesh = Arc::new(Mesh::from_model(PathBuf::from(
             "kadse/res/models/TestCube/TestCube.obj"
         ))?);
-        let cube_albedo = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/D_Terracotta.jpg")?);
-        let cube_metallic = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/M_Terracotta.png")?);
-        let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/N_Terracotta.jpg")?);
-        let cube_roughness = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/R_Terracotta.png")?);
+        let cube_albedo = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/D_Terracotta.jpg", TextureSpec::albedo())?);
+        let cube_metallic = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/M_Terracotta.png", TextureSpec::data())?);
+        let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/N_Terracotta.jpg", TextureSpec::normal())?);
+        let cube_roughness = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/R_Terracotta.png", TextureSpec::data())?);
+        
+        // let cube_albedo = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_PinkGlass/D_PinkGlass.jpg", TextureSpec::albedo())?);
+        // let cube_metallic = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_PinkGlass/M_PinkGlass.jpg", TextureSpec::data())?);
+        // let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_PinkGlass/N_PinkGlass.png", TextureSpec::normal())?);
+        // let cube_roughness = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_PinkGlass/R_PinkGlass.jpg", TextureSpec::data())?);
+        
         let pbr_shader = Arc::new(Shader::new(
             &PathBuf::from("kadse/res/shaders/pbr.vert"),
             &PathBuf::from("kadse/res/shaders/pbr.frag"),
@@ -66,7 +73,7 @@ impl GameState {
             albedo: MaterialProperty::Texture(cube_albedo.clone()),
             // albedo: MaterialProperty::Color(Vec3::new(1.0, 0.0, 1.0)),
             metallic: MaterialProperty::Texture(cube_metallic.clone()),
-            normal: NormalMap::Texture {texture: cube_normal.clone(), scale: 1.0},
+            normal: NormalMap::Texture {texture: cube_normal.clone(), scale: 3.0},
             // normal: NormalMap::None,
             roughness: MaterialProperty::Texture(cube_roughness.clone()),
             ..Default::default()

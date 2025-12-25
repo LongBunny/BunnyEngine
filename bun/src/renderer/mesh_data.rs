@@ -2,6 +2,8 @@ use crate::renderer::vertex::VertexLayout;
 use crate::Vertex;
 use glm::{Vec2, Vec3};
 use std::marker::PhantomData;
+use num_traits::Zero;
+use crate::renderer::mesh::calculate_tangents;
 
 pub struct MeshData<V: VertexLayout> {
     vertices: Vec<V>,
@@ -38,21 +40,25 @@ impl MeshData<Vertex> {
                 v: Vec3::new(-0.5, 0.0, 0.5),
                 vn: Vec3::new(0.0, 1.0, 0.0),
                 vt: Vec2::new(0.0, 1.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(-0.5, 0.0, -0.5),
                 vn: Vec3::new(0.0, 1.0, 0.0),
                 vt: Vec2::new(0.0, 1.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(0.5, 0.0, -0.5),
                 vn: Vec3::new(0.0, 1.0, 0.0),
                 vt: Vec2::new(1.0, 0.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(0.5, 0.0, 0.5),
                 vn: Vec3::new(0.0, 1.0, 0.0),
                 vt: Vec2::new(1.0, 1.0),
+                tangent: Vec3::zero(),
             },
         ];
         
@@ -77,7 +83,7 @@ impl MeshData<Vertex> {
                 
                 let u = 0.0 + x_advance;
                 let v = 1.0 - z_advance;
-                vertices.push(Vertex::new(Vec3::new(x, y, z), normal, Vec2::new(u, v)));
+                vertices.push(Vertex::new(Vec3::new(x, y, z), normal, Vec2::new(u, v), Vec3::zero()));
             }
         }
         
@@ -104,130 +110,154 @@ impl MeshData<Vertex> {
                 v: Vec3::new(-0.5, -0.5, 0.5),
                 vn: Vec3::new(0.0, 0.0, 1.0),
                 vt: Vec2::new(0.0, 0.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(0.5, -0.5, 0.5),
                 vn: Vec3::new(0.0, 0.0, 1.0),
                 vt: Vec2::new(1.0, 0.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(0.5, 0.5, 0.5),
                 vn: Vec3::new(0.0, 0.0, 1.0),
                 vt: Vec2::new(1.0, 1.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(-0.5, 0.5, 0.5),
                 vn: Vec3::new(0.0, 0.0, 1.0),
                 vt: Vec2::new(0.0, 1.0),
+                tangent: Vec3::zero(),
             },
             // Back face (-Z) - Green
             Vertex {
                 v: Vec3::new(0.5, -0.5, -0.5),
                 vn: Vec3::new(0.0, 0.0, -1.0),
                 vt: Vec2::new(0.0, 0.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(-0.5, -0.5, -0.5),
                 vn: Vec3::new(0.0, 0.0, -1.0),
                 vt: Vec2::new(1.0, 0.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(-0.5, 0.5, -0.5),
                 vn: Vec3::new(0.0, 0.0, -1.0),
                 vt: Vec2::new(1.0, 1.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(0.5, 0.5, -0.5),
                 vn: Vec3::new(0.0, 0.0, -1.0),
                 vt: Vec2::new(0.0, 1.0),
+                tangent: Vec3::zero(),
             },
             // Top face (+Y) - Blue
             Vertex {
                 v: Vec3::new(-0.5, 0.5, 0.5),
                 vn: Vec3::new(0.0, 1.0, 0.0),
                 vt: Vec2::new(0.0, 0.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(0.5, 0.5, 0.5),
                 vn: Vec3::new(0.0, 1.0, 0.0),
                 vt: Vec2::new(1.0, 0.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(0.5, 0.5, -0.5),
                 vn: Vec3::new(0.0, 1.0, 0.0),
                 vt: Vec2::new(1.0, 1.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(-0.5, 0.5, -0.5),
                 vn: Vec3::new(0.0, 1.0, 0.0),
                 vt: Vec2::new(0.0, 1.0),
+                tangent: Vec3::zero(),
             },
             // Bottom face (-Y) - Yellow
             Vertex {
                 v: Vec3::new(-0.5, -0.5, -0.5),
                 vn: Vec3::new(0.0, -1.0, 0.0),
                 vt: Vec2::new(0.0, 0.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(0.5, -0.5, -0.5),
                 vn: Vec3::new(0.0, -1.0, 0.0),
                 vt: Vec2::new(1.0, 0.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(0.5, -0.5, 0.5),
                 vn: Vec3::new(0.0, -1.0, 0.0),
                 vt: Vec2::new(1.0, 1.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(-0.5, -0.5, 0.5),
                 vn: Vec3::new(0.0, -1.0, 0.0),
                 vt: Vec2::new(0.0, 1.0),
+                tangent: Vec3::zero(),
             },
             // Right face (+X) - Magenta
             Vertex {
                 v: Vec3::new(0.5, -0.5, 0.5),
                 vn: Vec3::new(1.0, 0.0, 0.0),
                 vt: Vec2::new(0.0, 0.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(0.5, -0.5, -0.5),
                 vn: Vec3::new(1.0, 0.0, 0.0),
                 vt: Vec2::new(1.0, 0.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(0.5, 0.5, -0.5),
                 vn: Vec3::new(1.0, 0.0, 0.0),
                 vt: Vec2::new(1.0, 1.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(0.5, 0.5, 0.5),
                 vn: Vec3::new(1.0, 0.0, 0.0),
                 vt: Vec2::new(0.0, 1.0),
+                tangent: Vec3::zero(),
             },
             // Left face (-X) - Cyan
             Vertex {
                 v: Vec3::new(-0.5, -0.5, -0.5),
                 vn: Vec3::new(-1.0, 0.0, 0.0),
                 vt: Vec2::new(0.0, 0.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(-0.5, -0.5, 0.5),
                 vn: Vec3::new(-1.0, 0.0, 0.0),
                 vt: Vec2::new(1.0, 0.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(-0.5, 0.5, 0.5),
                 vn: Vec3::new(-1.0, 0.0, 0.0),
                 vt: Vec2::new(1.0, 1.0),
+                tangent: Vec3::zero(),
             },
             Vertex {
                 v: Vec3::new(-0.5, 0.5, -0.5),
                 vn: Vec3::new(-1.0, 0.0, 0.0),
                 vt: Vec2::new(0.0, 1.0),
+                tangent: Vec3::zero(),
             },
         ];
         
-        let indices: Vec<u32> = vec![
+        let mut indices: Vec<u32> = vec![
             // Front
             0, 1, 2, 2, 3, 0, // Back
             4, 5, 6, 6, 7, 4, // Top

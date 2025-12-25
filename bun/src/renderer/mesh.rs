@@ -2,12 +2,13 @@ use crate::renderer::buffer::{EBO, VBO};
 use crate::renderer::mesh_data::MeshData;
 use crate::renderer::vertex::{Vertex, VertexLayout};
 use crate::renderer::vertex_array::VAO;
-use glm::{IVec3, Vec2, Vec3};
+use glm::{dot, normalize, IVec3, Vec2, Vec3};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::path::Path;
 use std::ptr::null;
 use std::str::FromStr;
+use num_traits::Zero;
 
 #[allow(dead_code)]
 pub struct Mesh<V: VertexLayout> {
@@ -137,6 +138,7 @@ where
                             v: positions[v_idx as usize],
                             vn: normals[vn_idx as usize],
                             vt: uvs[vt_idx as usize],
+                            tangent: Vec3::zero(),
                         };
                         
                         let new_index = faces.len() as u32;
@@ -169,6 +171,7 @@ where
                             v: positions[v_idx as usize],
                             vn: normals[vn_idx as usize],
                             vt: uvs[vt_idx as usize],
+                            tangent: Vec3::zero(),
                         };
                         
                         let new_index = faces.len() as u32;
@@ -197,9 +200,55 @@ where
         println!("Unknown identifier in model: {line}");
     }
     
+    calculate_tangents(&mut faces, &mut indices);
+    
     Ok((faces, indices))
 }
 
+pub fn calculate_tangents(faces: &mut Vec<Vertex>, indices: &mut Vec<u32>) {
+    for tri in indices.chunks_exact(3) {
+        let i0 = tri[0] as usize;
+        let i1 = tri[1] as usize;
+        let i2 = tri[2] as usize;
+        
+        let v0 = &faces[i0];
+        let v1 = &faces[i1];
+        let v2 = &faces[i2];
+        
+        let p0 = v0.v;
+        let p1 = v1.v;
+        let p2 = v2.v;
+        
+        let uv0 = v0.vt;
+        let uv1 = v1.vt;
+        let uv2 = v2.vt;
+        
+        let dp1 = p1 - p0;
+        let dp2 = p2 - p0;
+        
+        let duv1 = uv1 - uv0;
+        let duv2 = uv2 - uv0;
+        
+        let denom = duv1.x * duv2.y - duv1.y * duv2.x;
+        if denom.abs() < 1e-8 {
+            continue; // degenerate UVs
+        }
+        
+        let r = 1.0 / denom;
+        let tangent = (dp1 * duv2.y - dp2 * duv1.y) * r;
+        
+        faces[i0].tangent = faces[i0].tangent + tangent;
+        faces[i1].tangent = faces[i1].tangent + tangent;
+        faces[i2].tangent = faces[i2].tangent + tangent;
+    }
+    
+    for v in faces {
+        let n = normalize(v.vn);
+        
+        // Gram–Schmidt orthogonalization
+        v.tangent = normalize(v.tangent - n * dot(n, v.tangent));
+    }
+}
 
 trait FromObjSlice: Sized {
     fn from_slice(parts: &[&str]) -> Result<Self, &'static str>;
