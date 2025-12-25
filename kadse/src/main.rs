@@ -286,14 +286,14 @@ impl App for KadseApp {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
         
-        for pbr_model in state.pbr_models.iter() {
+        for pbr_model in state.pbr_models.iter_mut() {
             pbr_model.texture.borrow().bind(0).unwrap();
             pbr_model.model.render(camera.projection(), camera);
         }
         
         state.ground_texture.bind(0).unwrap();
         let texture_scale_loc = {
-            state.floor.shader_mut().get_uniform_location("texture_scale").unwrap()
+            state.floor.shader().get_uniform_location("texture_scale").unwrap()
         };
         state.floor.shader().set_uniform(texture_scale_loc, 1.0);
         state.floor.render(camera.projection(), camera);
@@ -301,7 +301,7 @@ impl App for KadseApp {
 
         state.bunny_texture.bind(0).unwrap();
         let texture_scale_loc = {
-            state.bunny.shader_mut().get_uniform_location("texture_scale").unwrap()
+            state.bunny.shader().get_uniform_location("texture_scale").unwrap()
         };
         state.bunny.shader().set_uniform(texture_scale_loc, 1.0);
         state.bunny.render(camera.projection(), camera);

@@ -1,16 +1,18 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ffi::CString;
+use std::fmt::format;
 use std::path::{Path, PathBuf};
 use std::ptr::{null, null_mut};
 
 pub trait UniformValue {
-    unsafe fn set_uniform(&self, location: i32);
+    fn set_uniform(&self, location: i32);
 }
 
 pub struct Shader {
     id: u32,
     
-    uniforms: HashMap<String, i32>,
+    uniforms: RefCell<HashMap<String, i32>>,
     vertex_path: PathBuf,
     fragment_path: PathBuf,
 }
@@ -29,7 +31,7 @@ impl Shader {
 
         Ok(Self {
             id: program,
-            uniforms: HashMap::new(),
+            uniforms: RefCell::new(HashMap::new()),
             vertex_path: vertex_path.clone(),
             fragment_path: fragment_path.clone()
         })
@@ -51,8 +53,8 @@ impl Shader {
         }
     }
 
-    pub fn get_uniform_location(&mut self, name: &str) -> Option<i32> {
-        if let Some(&location) = self.uniforms.get(name) {
+    pub fn get_uniform_location(&self, name: &str) -> Option<i32> {
+        if let Some(&location) = self.uniforms.borrow().get(name) {
             return Some(location);
         }
         
@@ -66,29 +68,35 @@ impl Shader {
             return None;
         }
         
-        self.uniforms.insert(name.to_string(), location);
+        self.uniforms.borrow_mut().insert(name.to_string(), location);
         Some(location)
     }
 
     pub fn set_uniform<T: UniformValue>(&self, location: i32, value: T) {
-        unsafe {
-            value.set_uniform(location);
-        }
+        value.set_uniform(location);
     }
     
     
     pub fn reload(&mut self) -> Result<(), String> {
         let vertex = Self::create_shader(ShaderType::Vertex, &self.vertex_path)?;
         let fragment = Self::create_shader(ShaderType::Fragment, &self.fragment_path)?;
-        self.id = Self::create_program(vertex, fragment)?;
-        self.uniforms.clear();
+        let new_id = Self::create_program(vertex, fragment)?;
+        unsafe {
+            gl::DeleteProgram(self.id);
+        }
+        self.id = new_id;
+        
+        let mut uniforms = self.uniforms.borrow_mut();
+        uniforms.clear();
         
         Ok(())
     }
 
     fn create_shader(shader_type: ShaderType, path: &PathBuf) -> Result<u32, String> {
-        let shader_src = std::fs::read_to_string(path).unwrap();
-        let shader_src = CString::new(shader_src).unwrap();
+        let shader_src = std::fs::read_to_string(path)
+            .map_err(|e| format!("Failed to read {:?}: {}", path, e))?;
+        let shader_src = CString::new(shader_src)
+            .map_err(|e| format!("Failed to create CString: {}", e))?;
         unsafe {
             let shader_type = match shader_type {
                 ShaderType::Vertex => gl::VERTEX_SHADER,
@@ -150,47 +158,59 @@ impl Drop for Shader {
 #[allow(unsafe_op_in_unsafe_fn)]
 // Mat4
 impl UniformValue for glm::Mat4 {
-    unsafe fn set_uniform(&self, location: i32) {
-        gl::UniformMatrix4fv(location, 1, gl::FALSE, self.as_array().as_ptr() as *const _);
+    fn set_uniform(&self, location: i32) {
+        unsafe {
+            gl::UniformMatrix4fv(location, 1, gl::FALSE, self.as_array().as_ptr() as *const _);
+        }
     }
 }
 
 #[allow(unsafe_op_in_unsafe_fn)]
 // Mat3
 impl UniformValue for glm::Mat3 {
-    unsafe fn set_uniform(&self, location: i32) {
-        gl::UniformMatrix3fv(location, 1, gl::FALSE, self.as_array().as_ptr() as *const _);
+    fn set_uniform(&self, location: i32) {
+        unsafe {
+            gl::UniformMatrix3fv(location, 1, gl::FALSE, self.as_array().as_ptr() as *const _);
+        }
     }
 }
 
 #[allow(unsafe_op_in_unsafe_fn)]
 // Vec3
 impl UniformValue for glm::Vec3 {
-    unsafe fn set_uniform(&self, location: i32) {
-        gl::Uniform3fv(location, 1, self.as_array().as_ptr() as *const _);
+    fn set_uniform(&self, location: i32) {
+        unsafe {
+            gl::Uniform3fv(location, 1, self.as_array().as_ptr() as *const _);
+        }
     }
 }
 
 #[allow(unsafe_op_in_unsafe_fn)]
 // Vec4
 impl UniformValue for glm::Vec4 {
-    unsafe fn set_uniform(&self, location: i32) {
-        gl::Uniform4fv(location, 1, self.as_array().as_ptr() as *const _);
+    fn set_uniform(&self, location: i32) {
+        unsafe {
+            gl::Uniform4fv(location, 1, self.as_array().as_ptr() as *const _);
+        }
     }
 }
 
 #[allow(unsafe_op_in_unsafe_fn)]
 // f32
 impl UniformValue for f32 {
-    unsafe fn set_uniform(&self, location: i32) {
-        gl::Uniform1f(location, *self);
+    fn set_uniform(&self, location: i32) {
+        unsafe {
+            gl::Uniform1f(location, *self);
+        }
     }
 }
 
 #[allow(unsafe_op_in_unsafe_fn)]
 // i32
 impl UniformValue for i32 {
-    unsafe fn set_uniform(&self, location: i32) {
-        gl::Uniform1i(location, *self);
+    fn set_uniform(&self, location: i32) {
+        unsafe {
+            gl::Uniform1i(location, *self);
+        }
     }
 }

@@ -11,48 +11,51 @@ pub struct Transform {
     scale: Vec3, // radians
     rotation: Vec3,
     
-    model_matrix: Mat4
+    model_matrix: Mat4,
+    
+    dirty: bool,
 }
 
 impl Transform {
     pub fn new(position: Vec3, scale: Vec3, rotation: Vec3) -> Self {
-        
-        let mut result = Self { position, scale, rotation, model_matrix: Mat4::one() };
-        
+        let mut result = Self { position, scale, rotation, model_matrix: Mat4::one(), dirty: false };
         result.calculate_model_matrix();
-        
         result
     }
     
     pub fn pos(&self) -> Vec3 {
-        self.position.clone()
+        self.position
     }
     
     pub fn set_pos(&mut self, position: Vec3) {
         self.position = position;
-        self.calculate_model_matrix();
+        self.dirty = true;
     }
     
     pub fn scale(&self) -> Vec3 {
-        self.scale.clone()
+        self.scale
     }
     
     pub fn set_scale(&mut self, scale: Vec3) {
         self.scale = scale;
-        self.calculate_model_matrix();
+        self.dirty = true;
     }
     
     pub fn rotation(&self) -> Vec3 {
-        self.rotation.clone()
+        self.rotation
     }
     
     pub fn set_rotation(&mut self, rotation: Vec3) {
         self.rotation = rotation;
-        self.calculate_model_matrix();
+        self.dirty = true;
     }
     
-    pub fn model_matrix(&self) -> Mat4 {
-        self.model_matrix.clone()
+    pub fn model_matrix(&mut self) -> Mat4 {
+        if self.dirty {
+            self.calculate_model_matrix();
+            self.dirty = false;
+        }
+        self.model_matrix
     }
     
     fn calculate_model_matrix(&mut self) {
@@ -90,10 +93,12 @@ impl Model {
         Self { mesh, shader, transform: RefCell::new(transform), tint: Vec4::one(), specular_strength: 1.0 }
     }
     
-    pub fn render(&self, proj_mat: Mat4, camera: &Camera) {
-        self.shader.borrow().bind();
+    
+    // todo: move proj_mat and camera into renderer struct
+    pub fn render(&mut self, proj_mat: Mat4, camera: &Camera) {
+        let shader = self.shader.borrow();
+        shader.bind();
         
-        let mut shader = self.shader.borrow_mut();
         let proj_mat_loc = shader.get_uniform_location("proj_mat").unwrap();
         let view_mat_loc = shader.get_uniform_location("view_mat").unwrap();
         let model_mat_loc = shader.get_uniform_location("model_mat").unwrap();
@@ -116,8 +121,8 @@ impl Model {
         self.mesh.borrow().render();
     }
     
-    pub fn transform(&self) -> Ref<'_, Transform> {
-        self.transform.borrow()
+    pub fn transform(&self) -> RefMut<'_, Transform> {
+        self.transform.borrow_mut()
     }
     
     pub fn transform_mut(&self) -> RefMut<'_, Transform> {
