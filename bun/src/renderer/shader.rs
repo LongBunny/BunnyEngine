@@ -206,6 +206,17 @@ impl UniformValue for glm::Mat3 {
     }
 }
 
+
+#[allow(unsafe_op_in_unsafe_fn)]
+// Vec2
+impl UniformValue for glm::Vec2 {
+    fn set_uniform(&self, location: i32) {
+        unsafe {
+            gl::Uniform2fv(location, 1, self.as_array().as_ptr() as *const _);
+        }
+    }
+}
+
 #[allow(unsafe_op_in_unsafe_fn)]
 // Vec3
 impl UniformValue for glm::Vec3 {

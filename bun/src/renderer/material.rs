@@ -1,6 +1,6 @@
 use std::ffi::CString;
 use crate::{Shader, Texture};
-use glm::{Vec3, Vec4};
+use glm::{Vec2, Vec3, Vec4};
 use num_traits::{One, Zero};
 use std::sync::Arc;
 use crate::renderer::buffer::UBO;
@@ -26,6 +26,8 @@ pub struct Material {
     pub roughness: MaterialProperty,
     pub normal: NormalMap,
     pub emissive: MaterialProperty,
+    
+    pub texture_scale: Vec2,
     
     pub ubo: UBO,
 }
@@ -63,11 +65,14 @@ impl Material {
         }
        
         
-        if let Some(specular_intensity_loc) = self.shader.get_uniform_location("specular_intensity") {
-            self.shader.set_uniform(specular_intensity_loc, 1.0);
+        if let Some(loc) = self.shader.get_uniform_location("specular_intensity") {
+            self.shader.set_uniform(loc, 1.0);
         }
-        if let Some(tint_loc) = self.shader.get_uniform_location("tint") {
-            self.shader.set_uniform(tint_loc, Vec4::one());
+        if let Some(loc) = self.shader.get_uniform_location("tint") {
+            self.shader.set_uniform(loc, Vec4::one());
+        }
+        if let Some(loc) = self.shader.get_uniform_location("texture_scale") {
+            self.shader.set_uniform(loc, self.texture_scale);
         }
     }
 }
@@ -84,6 +89,8 @@ impl Default for Material {
             roughness: MaterialProperty::Value(1.0),
             normal: NormalMap::None,
             emissive: MaterialProperty::Color(Vec3::zero()),
+            
+            texture_scale: Vec2::one(),
             
             ubo
         }

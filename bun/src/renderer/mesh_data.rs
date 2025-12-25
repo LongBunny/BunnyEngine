@@ -1,6 +1,6 @@
 use crate::renderer::vertex::VertexLayout;
-use crate::Vertex;
-use glm::{Vec2, Vec3};
+use crate::{Mesh, Vertex};
+use glm::{dot, normalize, Vec2, Vec3};
 use std::marker::PhantomData;
 use num_traits::Zero;
 use crate::renderer::mesh::calculate_tangents;
@@ -35,7 +35,7 @@ impl<V: VertexLayout> MeshData<V> {
 
 impl MeshData<Vertex> {
     pub fn quad() -> Self {
-        let vertices: Vec<Vertex> = vec![
+        let mut vertices: Vec<Vertex> = vec![
             Vertex {
                 v: Vec3::new(-0.5, 0.0, 0.5),
                 vn: Vec3::new(0.0, 1.0, 0.0),
@@ -62,7 +62,9 @@ impl MeshData<Vertex> {
             },
         ];
         
-        let indices: Vec<u32> = vec![0, 1, 2, 0, 2, 3];
+        let mut indices: Vec<u32> = vec![0, 1, 2, 0, 2, 3];
+        
+        calculate_tangents(&mut vertices, &mut indices);
         
         Self { vertices, indices, _marker: PhantomData }
     }
@@ -100,11 +102,13 @@ impl MeshData<Vertex> {
             }
         }
         
+        calculate_tangents(&mut vertices, &mut indices);
+        
         Self { vertices, indices, _marker: PhantomData }
     }
     
     pub fn cube() -> Self {
-        let vertices: Vec<Vertex> = vec![
+        let mut vertices: Vec<Vertex> = vec![
             // Front face (+Z) - Red
             Vertex {
                 v: Vec3::new(-0.5, -0.5, 0.5),
@@ -267,12 +271,16 @@ impl MeshData<Vertex> {
             20, 21, 22, 22, 23, 20,
         ];
         
+        calculate_tangents(&mut vertices, &mut indices);
+        
         Self { vertices, indices, _marker: PhantomData }
     }
     
     pub fn cube_sphere() -> Self {
-        let vertices = vec![];
-        let indices = vec![];
+        let mut vertices = vec![];
+        let mut indices = vec![];
+        
+        calculate_tangents(&mut vertices, &mut indices);
         
         Self { vertices, indices, _marker: PhantomData }
     }

@@ -13,7 +13,7 @@ layout(binding = 2) uniform sampler2D tex_roughness;
 layout(binding = 3) uniform sampler2D tex_metallic;
 
 uniform vec3 camera_pos;
-uniform float texture_scale = 1.0;
+uniform vec2 texture_scale = vec2(1.0);
 
 layout(std140, binding = 2) uniform MaterialUBO {
     vec4 albedo_color;
@@ -128,4 +128,6 @@ void main() {
 
     // final
     out_col = vec4(Lo + ambient_diffuse + ambient_specular, 1.0);
+
+    out_col = vec4(pow(out_col.xyz, vec3(1.0 / 2.2)), 1.0);
 }

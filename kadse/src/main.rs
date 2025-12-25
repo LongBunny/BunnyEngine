@@ -1,12 +1,13 @@
 use bun::engine::engine::Engine;
 use bun::engine::runtime::{run, App, AppConfig, AppControl, Time};
-use bun::glm::Vec4;
+use bun::glm::{Vec2, Vec4};
 use bun::renderer::material::{Material, MaterialProperty, NormalMap};
 use bun::renderer::render_object::RenderObject;
 use bun::{glm, glm::Vec3, Camera, Event, Keycode, Mesh, One, Shader, Texture, Transform, Zero};
 use std::f32::consts::PI;
 use std::path::PathBuf;
 use std::sync::Arc;
+use bun::renderer::mesh_data::MeshData;
 use bun::renderer::texture::TextureSpec;
 
 const DEG_TO_RAD: f32 = PI / 180.0;
@@ -17,6 +18,7 @@ struct GameState {
     
     bunny: RenderObject,
     cube: RenderObject,
+    ground: RenderObject,
     
     speed: f32,
     rot_speed: f32,
@@ -51,12 +53,12 @@ impl GameState {
         let bunny = RenderObject::new(bunny_transform, bunny_mesh.clone(), bunny_mat.clone());
         
         
-        // let cube_mesh = Arc::new(Mesh::from_model(PathBuf::from(
-        //     "kadse/res/models/TestCube/TestCube.obj"
-        // ))?);
         let cube_mesh = Arc::new(Mesh::from_model(PathBuf::from(
-            "kadse/res/models/sphere.obj"
+            "kadse/res/models/TestCube/TestCube.obj"
         ))?);
+        // let cube_mesh = Arc::new(Mesh::from_model(PathBuf::from(
+        //     "kadse/res/models/sphere.obj"
+        // ))?);
         // let cube_albedo = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/D_Terracotta.jpg", TextureSpec::albedo())?);
         // let cube_metallic = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/M_Terracotta.png", TextureSpec::data())?);
         // let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/N_Terracotta.jpg", TextureSpec::normal())?);
@@ -72,25 +74,26 @@ impl GameState {
         // let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_MetalBubbles/N_MetalBubbles.png", TextureSpec::normal())?);
         // let cube_roughness = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_MetalBubbles/R_MetalBubbles.png", TextureSpec::data())?);
         
-        // let cube_albedo = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/D_Wooden.png", TextureSpec::albedo())?);
-        // // let cube_metallic = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/M_", TextureSpec::data())?);
-        // let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/N_Wooden.png", TextureSpec::normal())?);
-        // let cube_roughness = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/R_Wooden.png", TextureSpec::data())?);
+        let cube_albedo = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/D_Wooden.png", TextureSpec::albedo())?);
+        // let cube_metallic = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/M_", TextureSpec::data())?);
+        let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/N_Wooden.png", TextureSpec::normal())?);
+        let cube_roughness = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/R_Wooden.png", TextureSpec::data())?);
         
         let pbr_shader = Arc::new(Shader::new(
             &PathBuf::from("kadse/res/shaders/pbr.vert"),
             &PathBuf::from("kadse/res/shaders/pbr.frag"),
         )?);
+        
         let cube_mat = Arc::new(Material {
             shader: pbr_shader.clone(),
-            // albedo: MaterialProperty::Texture(cube_albedo.clone()),
-            albedo: MaterialProperty::Color(Vec3::new(0.8, 0.589, 0.006)),
+            albedo: MaterialProperty::Texture(cube_albedo.clone()),
+            // albedo: MaterialProperty::Color(Vec3::new(0.8, 0.589, 0.006)),
             // metallic: MaterialProperty::Texture(cube_metallic.clone()),
-            metallic: MaterialProperty::Value(1.0),
-            // normal: NormalMap::Texture {texture: cube_normal.clone(), scale: 1.0},
-            normal: NormalMap::None,
-            // roughness: MaterialProperty::Texture(cube_roughness.clone()),
-            roughness: MaterialProperty::Value(0.705),
+            metallic: MaterialProperty::Value(0.0),
+            normal: NormalMap::Texture {texture: cube_normal.clone(), scale: 1.0},
+            // normal: NormalMap::None,
+            roughness: MaterialProperty::Texture(cube_roughness.clone()),
+            // roughness: MaterialProperty::Value(0.705),
             ..Default::default()
         });
         let cube = RenderObject::new(
@@ -101,6 +104,29 @@ impl GameState {
             ),
             cube_mesh.clone(),
             cube_mat.clone(),
+        );
+        
+        let ground_albedo = Arc::new(Texture::new("kadse/res/textures/rocky_ground/rocky_terrain_diff_4k.jpg", TextureSpec::albedo())?);
+        let ground_normal = Arc::new(Texture::new("kadse/res/textures/rocky_ground/rocky_terrain_nor_gl_4k.png", TextureSpec::normal())?);
+        let ground_roughness = Arc::new(Texture::new("kadse/res/textures/rocky_ground/rocky_terrain_rough_4k.png", TextureSpec::data())?);
+        let ground_mat = Arc::new(Material {
+            shader: pbr_shader.clone(),
+            albedo: MaterialProperty::Texture(ground_albedo.clone()),
+            normal: NormalMap::Texture {texture: ground_normal.clone(), scale: 1.0},
+            roughness: MaterialProperty::Texture(ground_roughness.clone()),
+            metallic: MaterialProperty::Value(0.0),
+            texture_scale: Vec2::new(10.0, 10.0),
+            ..Default::default()
+        });
+        let ground_mesh = Arc::new(Mesh::from_mesh_data(&MeshData::subdiv_quad(1)));
+        let ground = RenderObject::new(
+            Transform::new(
+                Vec3::new(0.0, -0.5, 0.0),
+                Vec3::new(50.0, 1.0, 50.0),
+                Vec3::zero()
+            ),
+            ground_mesh.clone(),
+            ground_mat.clone(),
         );
         
         let camera = Camera::new(
@@ -116,6 +142,7 @@ impl GameState {
             camera,
             bunny,
             cube,
+            ground,
             speed: 7.0,
             rot_speed: 2.0,
             t: 0.0,
@@ -279,6 +306,11 @@ impl App for KadseApp {
         
         renderer.render(
             &state.cube,
+            camera
+        );
+        
+        renderer.render(
+            &state.ground,
             camera
         );
         

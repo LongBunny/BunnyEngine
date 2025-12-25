@@ -7,7 +7,7 @@ in vec3 frag_pos;
 
 uniform sampler2D u_texture;
 uniform vec3 camera_pos;
-uniform float texture_scale = 1.0;
+uniform vec2 texture_scale = vec2(1.0);
 uniform float specular_intensity = 1.0;
 
 out vec4 out_col;
