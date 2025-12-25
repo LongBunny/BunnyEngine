@@ -1,6 +1,7 @@
 use crate::engine::Engine;
 use sdl3::event::Event;
 use std::ffi::{c_void, CStr};
+use std::ptr::null;
 use std::time::{Duration, Instant};
 
 pub enum AppControl {
@@ -83,6 +84,10 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
         gl::Enable(gl::LINE_SMOOTH);
         gl::Enable(gl::CULL_FACE);
         gl::ClearColor(189.0 / 255.0, 220.0 / 255.0, 237.0 / 255.0, 1.0);
+        
+        gl::Enable(gl::DEBUG_OUTPUT);
+        gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
+        gl::DebugMessageCallback(Some(debug_callback), null());
 
         let version = CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8);
         println!("OpenGL version: {}", version.to_string_lossy());
@@ -136,4 +141,24 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
 
     drop(gl_context);
     Ok(())
+}
+
+extern "system" fn debug_callback(
+    _source: u32,
+    _type: u32,
+    _id: u32,
+    severity: u32,
+    _length: i32,
+    message: *const i8,
+    _user_param: *mut c_void,
+) {
+    if severity == gl::DEBUG_SEVERITY_NOTIFICATION {
+        return;
+    }
+    
+    let msg = unsafe {
+        CStr::from_ptr(message).to_string_lossy()
+    };
+    
+    eprintln!("OpenGL debug: {}", msg);
 }
