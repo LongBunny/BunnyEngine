@@ -11,10 +11,10 @@ use std::str::FromStr;
 
 #[allow(dead_code)]
 pub struct Mesh<V: VertexLayout> {
-    ebo: EBO,
-    vbo: VBO,
-    vao: VAO,
-    indices_len: usize,
+    pub ebo: EBO,
+    pub vbo: VBO,
+    pub vao: VAO,
+    pub indices_len: usize,
     _marker: PhantomData<V>
 }
 

@@ -83,7 +83,6 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
         gl::Enable(gl::MULTISAMPLE);
         gl::Enable(gl::LINE_SMOOTH);
         gl::Enable(gl::CULL_FACE);
-        gl::ClearColor(189.0 / 255.0, 220.0 / 255.0, 237.0 / 255.0, 1.0);
         
         gl::Enable(gl::DEBUG_OUTPUT);
         gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
@@ -124,6 +123,7 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
 
         app.update(&mut engine, Time { dt, elapsed_secs });
         app.render(&mut engine);
+        
         engine.window.gl_swap_window();
 
         if engine.should_close() {

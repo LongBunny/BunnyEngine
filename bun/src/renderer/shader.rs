@@ -1,9 +1,9 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ffi::CString;
-use std::fmt::format;
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use std::ptr::{null, null_mut};
+use std::sync::Arc;
 
 pub trait UniformValue {
     fn set_uniform(&self, location: i32);
@@ -13,8 +13,8 @@ pub struct Shader {
     id: u32,
     
     uniforms: RefCell<HashMap<String, i32>>,
-    vertex_path: PathBuf,
-    fragment_path: PathBuf,
+    vertex_path: Option<PathBuf>,
+    fragment_path: Option<PathBuf>,
 }
 
 enum ShaderType {
@@ -32,8 +32,22 @@ impl Shader {
         Ok(Self {
             id: program,
             uniforms: RefCell::new(HashMap::new()),
-            vertex_path: vertex_path.clone(),
-            fragment_path: fragment_path.clone()
+            vertex_path: Some(vertex_path.clone()),
+            fragment_path: Some(fragment_path.clone()),
+        })
+    }
+    
+    pub fn from_source(vertex_src: String, fragment_src: String) -> Result<Self, String> {
+        let vertex = Self::create_shader_from_source(ShaderType::Vertex, vertex_src)?;
+        let fragment = Self::create_shader_from_source(ShaderType::Fragment, fragment_src)?;
+        
+        let program = Self::create_program(vertex, fragment)?;
+        
+        Ok(Self {
+            id: program,
+            uniforms: RefCell::new(HashMap::new()),
+            vertex_path: None,
+            fragment_path: None,
         })
     }
 
@@ -78,8 +92,13 @@ impl Shader {
     
     
     pub fn reload(&mut self) -> Result<(), String> {
-        let vertex = Self::create_shader(ShaderType::Vertex, &self.vertex_path)?;
-        let fragment = Self::create_shader(ShaderType::Fragment, &self.fragment_path)?;
+        if self.vertex_path == None || self.fragment_path == None {
+            return Err("No shader source".to_string());
+        }
+        let vertex_path = self.vertex_path.clone().unwrap();
+        let fragment_path = self.fragment_path.clone().unwrap();
+        let vertex = Self::create_shader(ShaderType::Vertex, &vertex_path)?;
+        let fragment = Self::create_shader(ShaderType::Fragment, &fragment_path)?;
         let new_id = Self::create_program(vertex, fragment)?;
         unsafe {
             gl::DeleteProgram(self.id);
@@ -95,6 +114,10 @@ impl Shader {
     fn create_shader(shader_type: ShaderType, path: &PathBuf) -> Result<u32, String> {
         let shader_src = std::fs::read_to_string(path)
             .map_err(|e| format!("Failed to read {:?}: {}", path, e))?;
+        Self::create_shader_from_source(shader_type, shader_src)
+    }
+    
+    fn create_shader_from_source(shader_type: ShaderType, shader_src: String) -> Result<u32, String> {
         let shader_src = CString::new(shader_src)
             .map_err(|e| format!("Failed to create CString: {}", e))?;
         unsafe {
@@ -105,7 +128,7 @@ impl Shader {
             let shader = gl::CreateShader(shader_type);
             gl::ShaderSource(shader, 1, &shader_src.as_ptr(), null());
             gl::CompileShader(shader);
-
+            
             let mut success = 0;
             gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut success);
             if success != 1 {
@@ -115,7 +138,7 @@ impl Shader {
                 let log_str = std::ffi::CStr::from_ptr(log.as_ptr()).to_string_lossy();
                 return Err(std::format!("Could not compile shader: {}", log_str));
             }
-
+            
             Ok(shader)
         }
     }
@@ -143,6 +166,15 @@ impl Shader {
 
             Ok(program)
         }
+    }
+}
+
+impl Default for Shader {
+    fn default() -> Self {
+        Self::from_source(
+            include_str!("../res/shaders/default.vert").to_string(),
+            include_str!("../res/shaders/default.frag").to_string()
+        ).unwrap()
     }
 }
 

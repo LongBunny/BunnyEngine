@@ -2,12 +2,14 @@ use glm::Vec2;
 use sdl3::event::{Event, WindowEvent};
 use sdl3::video::Window;
 use crate::input_state::InputState;
+use crate::renderer::renderer::Renderer;
 
 pub struct Engine {
     pub(crate) window: Window,
     pub(crate) input: InputState,
     pub(crate) aspect_ratio: f32,
     pub(crate) should_close: bool,
+    pub(crate) renderer: Renderer,
 }
 
 impl Engine {
@@ -19,11 +21,16 @@ impl Engine {
             input: InputState::new(window_size),
             aspect_ratio,
             should_close: false,
+            renderer: Renderer::new()
         }
     }
     
     pub fn window(&self) -> &Window {
         &self.window
+    }
+    
+    pub fn renderer(&mut self) -> &mut Renderer {
+        &mut self.renderer
     }
     
     pub fn aspect_ratio(&self) -> f32 {

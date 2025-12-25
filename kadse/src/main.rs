@@ -1,31 +1,23 @@
-use bun::{gl, glm, glm::Vec3, run, App, AppConfig, AppControl, Camera, Mesh, Model, Shader, Texture, Transform, Event, Keycode, One, Zero, fastrand};
+use bun::{gl, glm, glm::Vec3, run, App, AppConfig, AppControl, Camera, Mesh, Renderable, Shader, Texture, Transform, Event, Keycode, One, Zero, fastrand};
 use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::sync::Arc;
 use bun::engine::Engine;
+use bun::glm::Vec4;
+use bun::renderer::material::{Material, MaterialProperty};
 use bun::renderer::mesh_data::MeshData;
 use bun::runtime::Time;
 use bun::sdl3::libc::stat;
 
 const DEG_TO_RAD: f32 = PI / 180.0;
 
-struct PbrModel {
-    model: Model,
-    texture: Rc<RefCell<Texture>>
-}
 
 struct GameState {
     camera: Camera,
-    default_shader: Rc<RefCell<Shader>>,
-    checkerboard_shader: Rc<RefCell<Shader>>,
-    pbr_shader: Rc<RefCell<Shader>>,
-    bunny_texture: Texture,
-    ground_texture: Texture,
-    floor: Model,
-    bunny: Model,
-    
-    pbr_models: Vec<PbrModel>,
+    bunny_mat: Material,
+    bunny_renderable: Renderable,
     
     speed: f32,
     rot_speed: f32,
@@ -34,52 +26,47 @@ struct GameState {
 
 impl GameState {
     fn new(engine: &Engine) -> Result<Self, String> {
-        let default_shader = Rc::new(RefCell::new(Shader::new(
+        let default_shader = Arc::new(Shader::new(
             &PathBuf::from("kadse/res/shaders/default.vert"),
             &PathBuf::from("kadse/res/shaders/default.frag"),
-        )?));
+        )?);
         
-        let pbr_shader = Rc::new(RefCell::new(Shader::new(
-            &PathBuf::from("kadse/res/shaders/pbr.vert"),
-            &PathBuf::from("kadse/res/shaders/pbr.frag"),
-        )?));
-
-        let checkerboard_shader = Rc::new(RefCell::new(Shader::new(
-            &PathBuf::from("kadse/res/shaders/checkerboard.vert"),
-            &PathBuf::from("kadse/res/shaders/checkerboard.frag"),
-        )?));
-
-        let bunny_texture = Texture::new("kadse/res/textures/gltf_embedded_0.png")?;
-
-        let quad_mesh = Rc::new(RefCell::new(Mesh::from_mesh_data(&MeshData::quad())));
+        let bunny_texture = Arc::new(Texture::new("kadse/res/textures/gltf_embedded_0.png")?);
+        let bunny_mat = Material {
+            shader: default_shader.clone(),
+            albedo: MaterialProperty::Texture(bunny_texture.clone()),
+            ..Default::default()
+        };
         let bunny_mesh = Rc::new(RefCell::new(Mesh::from_model(PathBuf::from(
             "kadse/res/models/rabbit.obj",
         ))?));
         
-        let cube_mesh = Rc::new(RefCell::new(Mesh::from_model(PathBuf::from(
-            "kadse/res/models/TestCube/TestCube.obj"
-        ))?));
         
-        let tex_wooden = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/D_Wooden.png")?));
-        let tex_terracotta = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/D_Terracotta.jpg")?));
-        let tex_sand = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Sand/D_StylizedSand.png")?));
-        let tex_pink_glass = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_PinkGlass/D_PinkGlass.jpg")?));
-        let tex_metal_bubbles = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_MetalBubbles/D_MetalBubbles.png")?));
-        let tex_cord_woven = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_CordWoven/D_CordWoven.png")?));
-        let ground_texture = Texture::new("kadse/res/textures/Grass004_4K-JPG_Color.jpg")?;
         
-        let pbr_models = vec![
-            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(-7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_wooden.clone()},
-            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(-4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_terracotta.clone()},
-            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(-1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_sand.clone()},
-            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_pink_glass.clone()},
-            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_metal_bubbles.clone()},
-            PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_cord_woven.clone()},
-        ];
+        // let quad_mesh = Rc::new(RefCell::new(Mesh::from_mesh_data(&MeshData::quad())));
+        // let cube_mesh = Rc::new(RefCell::new(Mesh::from_model(PathBuf::from(
+        //     "kadse/res/models/TestCube/TestCube.obj"
+        // ))?));
+        
+        // let tex_wooden = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/D_Wooden.png")?));
+        // let tex_terracotta = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/D_Terracotta.jpg")?));
+        // let tex_sand = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_Sand/D_StylizedSand.png")?));
+        // let tex_pink_glass = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_PinkGlass/D_PinkGlass.jpg")?));
+        // let tex_metal_bubbles = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_MetalBubbles/D_MetalBubbles.png")?));
+        // let tex_cord_woven = Rc::new(RefCell::new(Texture::new("kadse/res/models/TestCube/Mat_CordWoven/D_CordWoven.png")?));
+        // let ground_texture = Texture::new("kadse/res/textures/Grass004_4K-JPG_Color.jpg")?;
+        
+        // let pbr_models = vec![
+        //     PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(-7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_wooden.clone()},
+        //     PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(-4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_terracotta.clone()},
+        //     PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(-1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_sand.clone()},
+        //     PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(1.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_pink_glass.clone()},
+        //     PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_metal_bubbles.clone()},
+        //     PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_cord_woven.clone()},
+        // ];
 
-        let bunny = Model::with_transform(
+        let bunny = Renderable::with_transform(
             bunny_mesh.clone(),
-            default_shader.clone(),
             Transform::new(
                 Vec3::new(0.0, 3.0, 12.5),
                 Vec3::new(40.0, 40.0, 40.0),
@@ -88,21 +75,21 @@ impl GameState {
             ),
         );
         
-        let mut subdiv_quad_mesh_data = MeshData::subdiv_quad(32);
-        for vertex in subdiv_quad_mesh_data.vertices_mut() {
-            vertex.v.y += (fastrand::f32() * 2.0 - 1.0) * 0.3 - 0.2;
-        }
-        let subdiv_quad = Rc::new(RefCell::new(Mesh::from_mesh_data(&subdiv_quad_mesh_data)));
-        let mut floor = Model::with_transform(
-            subdiv_quad.clone(),
-            default_shader.clone(),
-            Transform::new(
-                Vec3::new(0.0, -1.0, 0.0),
-                Vec3::new(150.0, 1.0, 150.0),
-                Vec3::new(0.0, 0.0, 0.0),
-            ),
-        );
-        floor.set_specular_strength(0.0);
+        // let mut subdiv_quad_mesh_data = MeshData::subdiv_quad(32);
+        // for vertex in subdiv_quad_mesh_data.vertices_mut() {
+        //     vertex.v.y += (fastrand::f32() * 2.0 - 1.0) * 0.3 - 0.2;
+        // }
+        // let subdiv_quad = Rc::new(RefCell::new(Mesh::from_mesh_data(&subdiv_quad_mesh_data)));
+        // let mut floor = Renderable::with_transform(
+        //     subdiv_quad.clone(),
+        //     default_shader.clone(),
+        //     Transform::new(
+        //         Vec3::new(0.0, -1.0, 0.0),
+        //         Vec3::new(150.0, 1.0, 150.0),
+        //         Vec3::new(0.0, 0.0, 0.0),
+        //     ),
+        // );
+        // floor.set_specular_strength(0.0);
 
         let camera = Camera::new(
             Vec3::new(0.0, 1.0, 0.0),
@@ -115,14 +102,8 @@ impl GameState {
 
         Ok(Self {
             camera,
-            default_shader,
-            checkerboard_shader,
-            pbr_shader,
-            bunny_texture,
-            ground_texture,
-            floor,
-            bunny,
-            pbr_models,
+            bunny_mat,
+            bunny_renderable: bunny,
             speed: 7.0,
             rot_speed: 2.0,
             t: 0.0,
@@ -132,23 +113,23 @@ impl GameState {
     fn reload_shaders(&mut self) {
         println!("Reloading shaders");
 
-        self.default_shader.borrow().unbind();
-        match self.default_shader.borrow_mut().reload() {
-            Ok(_) => println!("default_shader reloaded!"),
-            Err(e) => eprintln!("default_shader compilation failed: {}", e),
-        }
-
-        self.checkerboard_shader.borrow().unbind();
-        match self.checkerboard_shader.borrow_mut().reload() {
-            Ok(_) => println!("checkerboard_shader reloaded!"),
-            Err(e) => eprintln!("checkerboard_shader compilation failed: {}", e),
-        }
-        
-        self.pbr_shader.borrow().unbind();
-        match self.pbr_shader.borrow_mut().reload() {
-            Ok(_) => println!("pbr_shader reloaded!"),
-            Err(e) => eprintln!("pbr_shader compilation failed: {}", e),
-        }
+        // self.default_shader.borrow().unbind();
+        // match self.default_shader.borrow_mut().reload() {
+        //     Ok(_) => println!("default_shader reloaded!"),
+        //     Err(e) => eprintln!("default_shader compilation failed: {}", e),
+        // }
+        //
+        // self.checkerboard_shader.borrow().unbind();
+        // match self.checkerboard_shader.borrow_mut().reload() {
+        //     Ok(_) => println!("checkerboard_shader reloaded!"),
+        //     Err(e) => eprintln!("checkerboard_shader compilation failed: {}", e),
+        // }
+        //
+        // self.pbr_shader.borrow().unbind();
+        // match self.pbr_shader.borrow_mut().reload() {
+        //     Ok(_) => println!("pbr_shader reloaded!"),
+        //     Err(e) => eprintln!("pbr_shader compilation failed: {}", e),
+        // }
     }
 
     fn handle_movement(&mut self, engine: &Engine, dt: f32) {
@@ -265,50 +246,58 @@ impl App for KadseApp {
         state.camera.set_aspect_ratio(engine.aspect_ratio());
         state.handle_movement(engine, time.dt());
         
-        let pos = state.bunny.transform().pos();
-        let rot = state.bunny.transform().rotation();
+        let pos = state.bunny_renderable.transform().pos();
+        let rot = state.bunny_renderable.transform().rotation();
         state
-            .bunny
+            .bunny_renderable
             .transform_mut()
             .set_rotation(Vec3::new(rot.x, rot.y + 0.02, rot.z));
         state
-            .bunny
+            .bunny_renderable
             .transform_mut()
             .set_pos(Vec3::new(pos.x, glm::sin(time.elapsed_secs() * 2.0) + 2.0 + 1.0, pos.z));
         state.t += time.dt();
     }
 
     fn render(&mut self, engine: &mut Engine) {
+        let renderer = engine.renderer();
+        renderer.begin_frame(Vec4::new(189.0 / 255.0, 220.0 / 255.0, 237.0 / 255.0, 1.0));
+        
         let state = self.state_mut();
         let camera = &state.camera;
 
-        unsafe {
-            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
         
-        for pbr_model in state.pbr_models.iter_mut() {
-            pbr_model.texture.borrow().bind(0).unwrap();
-            pbr_model.model.render(camera.projection(), camera);
-        }
-        
-        state.ground_texture.bind(0).unwrap();
-        let texture_scale_loc = {
-            state.floor.shader().get_uniform_location("texture_scale").unwrap()
-        };
-        state.floor.shader().set_uniform(texture_scale_loc, 1.0);
-        state.floor.render(camera.projection(), camera);
-        state.ground_texture.unbind();
-
-        state.bunny_texture.bind(0).unwrap();
-        let texture_scale_loc = {
-            state.bunny.shader().get_uniform_location("texture_scale").unwrap()
-        };
-        state.bunny.shader().set_uniform(texture_scale_loc, 1.0);
-        state.bunny.render(camera.projection(), camera);
-        state.bunny_texture.unbind();
+        renderer.render_mesh(
+            &state.bunny_renderable,
+            &state.bunny_mat,
+            camera
+        );
         
         
-
+        // for pbr_model in state.pbr_models.iter_mut() {
+        //     pbr_model.texture.borrow().bind(0).unwrap();
+        //     pbr_model.model.render(camera.projection(), camera);
+        // }
+        //
+        // state.ground_texture.bind(0).unwrap();
+        // let texture_scale_loc = {
+        //     state.floor.shader().get_uniform_location("texture_scale").unwrap()
+        // };
+        // state.floor.shader().set_uniform(texture_scale_loc, 1.0);
+        // state.floor.render(camera.projection(), camera);
+        // state.ground_texture.unbind();
+        //
+        // state.bunny_texture.bind(0).unwrap();
+        // let texture_scale_loc = {
+        //     state.bunny.shader().get_uniform_location("texture_scale").unwrap()
+        // };
+        // state.bunny.shader().set_uniform(texture_scale_loc, 1.0);
+        // state.bunny.render(camera.projection(), camera);
+        // state.bunny_texture.unbind();
+        
+        
+        renderer.end_frame();
+        
         if engine.aspect_ratio() > 0.0 {
             state.camera.set_aspect_ratio(engine.aspect_ratio());
         }
