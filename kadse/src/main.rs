@@ -4,10 +4,8 @@ use bun::renderer::material::{Material, MaterialProperty};
 use bun::renderer::render_object::RenderObject;
 use bun::runtime::Time;
 use bun::{glm, glm::Vec3, run, App, AppConfig, AppControl, Camera, Event, Keycode, Mesh, Shader, Texture, Transform};
-use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::sync::Arc;
 
 const DEG_TO_RAD: f32 = PI / 180.0;

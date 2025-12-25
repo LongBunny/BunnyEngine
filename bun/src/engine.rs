@@ -1,8 +1,8 @@
+use crate::input_state::InputState;
+use crate::renderer::renderer::Renderer;
 use glm::Vec2;
 use sdl3::event::{Event, WindowEvent};
 use sdl3::video::Window;
-use crate::input_state::InputState;
-use crate::renderer::renderer::Renderer;
 
 pub struct Engine {
     pub(crate) window: Window,

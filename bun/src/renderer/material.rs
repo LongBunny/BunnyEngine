@@ -1,9 +1,7 @@
-use std::cell::RefMut;
-use std::sync::Arc;
+use crate::{Shader, Texture};
 use glm::{Vec3, Vec4};
 use num_traits::{One, Zero};
-use crate::{Camera, Shader, Texture, Transform};
-use crate::renderer::renderer::Renderer;
+use std::sync::Arc;
 
 pub enum MaterialProperty {
     Value(f32),

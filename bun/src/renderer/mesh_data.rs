@@ -1,7 +1,7 @@
-use std::marker::PhantomData;
+use crate::renderer::vertex::VertexLayout;
 use crate::Vertex;
 use glm::{Vec2, Vec3};
-use crate::renderer::vertex::VertexLayout;
+use std::marker::PhantomData;
 
 pub struct MeshData<V: VertexLayout> {
     vertices: Vec<V>,

@@ -1,5 +1,5 @@
-use glm::{Vec2, Vec3, Vec4};
 use crate::renderer::vertex_array::VAO;
+use glm::{Vec2, Vec3};
 
 #[derive(Debug)]
 #[repr(C)]

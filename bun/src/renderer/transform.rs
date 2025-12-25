@@ -1,6 +1,6 @@
-use std::cell::{Cell, RefCell};
 use glm::{Mat4, Vec3};
 use num_traits::One;
+use std::cell::{Cell, RefCell};
 
 pub struct Transform {
     position: Vec3,

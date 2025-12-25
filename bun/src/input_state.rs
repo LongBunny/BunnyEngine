@@ -1,7 +1,7 @@
-use std::collections::HashSet;
 use glm::Vec2;
 use num_traits::Zero;
 use sdl3::keyboard::Keycode;
+use std::collections::HashSet;
 
 pub struct InputState {
     pub(crate) keys_down: HashSet<Keycode>,

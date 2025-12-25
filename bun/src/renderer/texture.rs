@@ -1,7 +1,7 @@
-use gl::types::{GLint, GLuint};
+use gl::types::GLint;
+use glm::Vec3;
 use std::ffi::c_void;
 use std::path::Path;
-use glm::Vec3;
 
 pub struct Texture {
     texture_id: u32,

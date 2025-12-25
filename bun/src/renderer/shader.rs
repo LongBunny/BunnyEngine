@@ -1,9 +1,8 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ffi::CString;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use std::ptr::{null, null_mut};
-use std::sync::Arc;
 
 pub trait UniformValue {
     fn set_uniform(&self, location: i32);

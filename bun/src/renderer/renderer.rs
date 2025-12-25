@@ -1,7 +1,7 @@
 use crate::renderer::render_object::RenderObject;
-use glm::Vec4;
-use crate::{Camera, Shader};
 use crate::renderer::transform::Transform;
+use crate::{Camera, Shader};
+use glm::Vec4;
 
 pub struct Renderer {
     current_shader: Option<u32>

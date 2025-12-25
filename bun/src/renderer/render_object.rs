@@ -1,7 +1,7 @@
-use std::sync::Arc;
-use crate::{Mesh, Vertex};
 use crate::renderer::material::Material;
 use crate::renderer::transform::Transform;
+use crate::{Mesh, Vertex};
+use std::sync::Arc;
 
 pub struct RenderObject {
     transform: Transform,
