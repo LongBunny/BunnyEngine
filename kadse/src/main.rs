@@ -1,8 +1,9 @@
-use bun::{gl, glm, glm::Vec3, run, App, AppConfig, AppControl, Camera, Engine, Mesh, Model, Shader, Texture, Transform, Event, Keycode, One, Zero, fastrand};
+use bun::{gl, glm, glm::Vec3, run, App, AppConfig, AppControl, Camera, Mesh, Model, Shader, Texture, Transform, Event, Keycode, One, Zero, fastrand};
 use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::path::PathBuf;
 use std::rc::Rc;
+use bun::engine::Engine;
 use bun::renderer::mesh_data::MeshData;
 use bun::runtime::Time;
 use bun::sdl3::libc::stat;
@@ -87,9 +88,9 @@ impl GameState {
             ),
         );
         
-        let mut subdiv_quad_mesh_data = MeshData::subdiv_quad(16);
+        let mut subdiv_quad_mesh_data = MeshData::subdiv_quad(32);
         for vertex in subdiv_quad_mesh_data.vertices_mut() {
-            vertex.v.y += (fastrand::f32() * 2.0 - 1.0);
+            vertex.v.y += (fastrand::f32() * 2.0 - 1.0) * 0.3 - 0.2;
         }
         let subdiv_quad = Rc::new(RefCell::new(Mesh::from_mesh_data(&subdiv_quad_mesh_data)));
         let mut floor = Model::with_transform(
@@ -97,7 +98,7 @@ impl GameState {
             default_shader.clone(),
             Transform::new(
                 Vec3::new(0.0, -1.0, 0.0),
-                Vec3::new(50.0, 1.0, 50.0),
+                Vec3::new(150.0, 1.0, 150.0),
                 Vec3::new(0.0, 0.0, 0.0),
             ),
         );
