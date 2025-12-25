@@ -1,4 +1,5 @@
 use glm::{Vec2, Vec3, Vec4};
+use crate::renderer::vertex_array::VAO;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -17,3 +18,16 @@ impl Vertex {
         }
     }
 }
+
+pub trait VertexLayout {
+    fn setup_attributes(vao: &VAO);
+}
+
+impl VertexLayout for Vertex {
+    fn setup_attributes(vao: &VAO) {
+        vao.vertex_attrib_pointer(0, 3, 8, 0);
+        vao.vertex_attrib_pointer(1, 3, 8, 3);
+        vao.vertex_attrib_pointer(2, 2, 8, 6);
+    }
+}
+

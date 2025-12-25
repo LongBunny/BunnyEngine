@@ -1,54 +1,67 @@
 use crate::renderer::buffer::{EBO, VBO};
 use crate::renderer::mesh_data::MeshData;
-use crate::renderer::vertex::Vertex;
+use crate::renderer::vertex::{Vertex, VertexLayout};
 use crate::renderer::vertex_array::VAO;
 use glm::{IVec3, Vec2, Vec3};
 use std::collections::HashMap;
+use std::marker::PhantomData;
 use std::path::Path;
 use std::ptr::null;
 use std::str::FromStr;
 
 #[allow(dead_code)]
-pub struct Mesh {
+pub struct Mesh<V: VertexLayout> {
     ebo: EBO,
     vbo: VBO,
     vao: VAO,
-
     indices_len: usize,
+    _marker: PhantomData<V>
 }
 
-impl Mesh {
-    pub fn new(vertices: &Vec<Vertex>, indices: &Vec<u32>) -> Self {
+impl<V: VertexLayout> Mesh<V> {
+    pub fn new(vertices: &[V], indices: &[u32]) -> Self {
+        let vao = VAO::new();
         let ebo = EBO::new();
         let vbo = VBO::new();
-        let vao = VAO::new();
-
+        
+        vao.bind();
+        
         ebo.bind();
         ebo.buffer_data(&indices);
-
-        vao.bind();
+        
         vbo.bind();
         vbo.buffer_data(vertices);
-        vao.vertex_attrib_pointer(0, 3, 8, 0);
-        vao.vertex_attrib_pointer(1, 3, 8, 3);
-        vao.vertex_attrib_pointer(2, 2, 8, 6);
-
-        ebo.unbind();
-        vbo.unbind();
-        vao.unbind();
+        
+        V::setup_attributes(&vao);
 
         Self {
             ebo,
             vbo,
             vao,
             indices_len: indices.len(),
+            _marker: PhantomData
         }
     }
     
-    pub fn from_mesh_data(mesh_data: &MeshData) -> Self {
+    pub fn from_mesh_data(mesh_data: &MeshData<V>) -> Self {
         Mesh::new(mesh_data.vertices(), mesh_data.indices())
     }
+    
+    pub fn render(&self) {
+        self.vao.bind();
+        let count = self.indices_len.try_into().expect("Too many indices");
+        unsafe {
+            gl::DrawElements(
+                gl::TRIANGLES,
+                count,
+                gl::UNSIGNED_INT,
+                null(),
+            );
+        }
+    }
+}
 
+impl Mesh<Vertex> {
     pub fn from_model<P>(path: P) -> Result<Self, String>
     where
         P: AsRef<Path>,
@@ -56,19 +69,7 @@ impl Mesh {
         let (vertices, indices) = load_from_obj(path)?;
         Ok(Mesh::new(&vertices, &indices))
     }
-
-    pub fn render(&self) {
-        self.vao.bind();
-        self.ebo.bind();
-        unsafe {
-            gl::DrawElements(
-                gl::TRIANGLES,
-                self.indices_len as i32,
-                gl::UNSIGNED_INT,
-                null(),
-            );
-        }
-    }
+    
 }
 
 fn load_from_obj<P>(path: P) -> Result<(Vec<Vertex>, Vec<u32>), String>

@@ -2,7 +2,7 @@ use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 use glm::{Mat4, Vec3, Vec4};
 use num_traits::{One, Zero};
-use crate::Camera;
+use crate::{Camera, Vertex};
 use crate::renderer::mesh::Mesh;
 use crate::renderer::shader::Shader;
 
@@ -67,7 +67,7 @@ impl Transform {
 }
 
 pub struct Model {
-    mesh: Rc<RefCell<Mesh>>,
+    mesh: Rc<RefCell<Mesh<Vertex>>>,
     shader: Rc<RefCell<Shader>>,
     
     transform: RefCell<Transform>,
@@ -76,7 +76,7 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn new(mesh: Rc<RefCell<Mesh>>, shader: Rc<RefCell<Shader>>) -> Self {
+    pub fn new(mesh: Rc<RefCell<Mesh<Vertex>>>, shader: Rc<RefCell<Shader>>) -> Self {
         Self {
             mesh,
             shader,
@@ -86,7 +86,7 @@ impl Model {
         }
     }
     
-    pub fn with_transform(mesh: Rc<RefCell<Mesh>>, shader: Rc<RefCell<Shader>>, transform: Transform) -> Self {
+    pub fn with_transform(mesh: Rc<RefCell<Mesh<Vertex>>>, shader: Rc<RefCell<Shader>>, transform: Transform) -> Self {
         Self { mesh, shader, transform: RefCell::new(transform), tint: Vec4::one(), specular_strength: 1.0 }
     }
     
@@ -136,11 +136,11 @@ impl Model {
     
     pub fn set_specular_strength(&mut self, specular_strength: f32) { self.specular_strength = specular_strength }
     
-    pub fn mesh(&self) -> Ref<'_, Mesh> {
+    pub fn mesh(&self) -> Ref<'_, Mesh<Vertex>> {
         self.mesh.borrow()
     }
     
-    pub fn mesh_mut(&self) -> RefMut<'_, Mesh> {
+    pub fn mesh_mut(&self) -> RefMut<'_, Mesh<Vertex>> {
         self.mesh.borrow_mut()
     }
     

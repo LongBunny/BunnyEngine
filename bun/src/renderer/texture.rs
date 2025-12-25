@@ -7,6 +7,8 @@ pub struct Texture {
     texture_id: u32,
     width: i32,
     height: i32,
+    
+    file_name: String,
 }
 
 impl Texture {
@@ -14,7 +16,8 @@ impl Texture {
     where
         P: AsRef<Path>,
     {
-        println!("loading texture: {}", path.as_ref().to_string_lossy());
+        let file_name = String::from(path.as_ref().to_string_lossy());
+        println!("loading texture: {}", file_name);
         let image = image::open(path).unwrap();
         let image = image.flipv();
         let width = image.width() as i32;
@@ -27,6 +30,7 @@ impl Texture {
             width,
             height,
             texture_id,
+            file_name
         })
     }
     
@@ -51,7 +55,8 @@ impl Texture {
         Ok(Self {
             width,
             height,
-            texture_id
+            texture_id,
+            file_name: String::from("Auto generated texture")
         })
     }
 

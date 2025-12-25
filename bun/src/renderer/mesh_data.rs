@@ -1,28 +1,37 @@
+use std::marker::PhantomData;
 use crate::Vertex;
 use glm::{Vec2, Vec3};
+use crate::renderer::vertex::VertexLayout;
 
-pub struct MeshData {
-    vertices: Vec<Vertex>,
+pub struct MeshData<V: VertexLayout> {
+    vertices: Vec<V>,
     indices: Vec<u32>,
+    _marker: PhantomData<V>
 }
 
-impl MeshData {
-    pub fn new(vertices: Vec<Vertex>, indices: Vec<u32>) -> Self {
-        Self { vertices, indices }
+impl<V: VertexLayout> MeshData<V> {
+    pub fn new(vertices: Vec<V>, indices: Vec<u32>) -> Self {
+        Self {
+            vertices,
+            indices,
+            _marker: PhantomData
+        }
     }
 
-    pub fn vertices(&self) -> &Vec<Vertex> {
+    pub fn vertices(&self) -> &Vec<V> {
         &self.vertices
     }
     
-    pub fn vertices_mut(&mut self) -> &mut Vec<Vertex> {
+    pub fn vertices_mut(&mut self) -> &mut Vec<V> {
         self.vertices.as_mut()
     }
 
     pub fn indices(&self) -> &Vec<u32> {
         &self.indices
     }
+}
 
+impl MeshData<Vertex> {
     pub fn quad() -> Self {
         let vertices: Vec<Vertex> = vec![
             Vertex {
@@ -46,16 +55,16 @@ impl MeshData {
                 vt: Vec2::new(1.0, 1.0),
             },
         ];
-
+        
         let indices: Vec<u32> = vec![0, 1, 2, 0, 2, 3];
-
-        Self { vertices, indices }
+        
+        Self { vertices, indices, _marker: PhantomData }
     }
-
+    
     pub fn subdiv_quad(res: u32) -> Self {
         let mut vertices = vec![];
         let mut indices = vec![];
-
+        
         let spacing = 1.0 / res as f32;
         let normal = Vec3::new(0.0, 1.0, 0.0);
         for row in 0..=res {
@@ -65,29 +74,29 @@ impl MeshData {
                 let x = -0.5 + x_advance;
                 let y = 0.0f32;
                 let z = 0.5 - z_advance;
-
+                
                 let u = 0.0 + x_advance;
                 let v = 1.0 - z_advance;
                 vertices.push(Vertex::new(Vec3::new(x, y, z), normal, Vec2::new(u, v)));
             }
         }
-
+        
         for row in 0..res {
             for col in 0..res {
                 let stride = res + 1;
                 indices.push(col + row * stride);
                 indices.push((col + 1) + row * stride);
                 indices.push(col + (row + 1) * stride);
-
+                
                 indices.push(col + (row + 1) * stride);
                 indices.push((col + 1) + row * stride);
                 indices.push((col + 1) + (row + 1) * stride);
             }
         }
-
-        Self { vertices, indices }
+        
+        Self { vertices, indices, _marker: PhantomData }
     }
-
+    
     pub fn cube() -> Self {
         let vertices: Vec<Vertex> = vec![
             // Front face (+Z) - Red
@@ -217,7 +226,7 @@ impl MeshData {
                 vt: Vec2::new(0.0, 1.0),
             },
         ];
-
+        
         let indices: Vec<u32> = vec![
             // Front
             0, 1, 2, 2, 3, 0, // Back
@@ -227,14 +236,14 @@ impl MeshData {
             16, 17, 18, 18, 19, 16, // Left
             20, 21, 22, 22, 23, 20,
         ];
-
-        Self { vertices, indices }
+        
+        Self { vertices, indices, _marker: PhantomData }
     }
-
+    
     pub fn cube_sphere() -> Self {
         let vertices = vec![];
         let indices = vec![];
-
-        Self { vertices, indices }
+        
+        Self { vertices, indices, _marker: PhantomData }
     }
 }
