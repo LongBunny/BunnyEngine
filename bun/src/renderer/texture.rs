@@ -7,8 +7,6 @@ pub struct Texture {
     texture_id: u32,
     width: i32,
     height: i32,
-    
-    file_name: String,
 }
 
 impl Texture {
@@ -24,13 +22,12 @@ impl Texture {
         let height = image.height() as i32;
         let data = image.to_rgba8();
 
-        let texture_id = Self::create_and_upload_texture(width, height, data.as_ptr() as *const _)?;
+        let texture_id = Self::create_rgba8(width, height, &data)?;
 
         Ok(Self {
             width,
             height,
-            texture_id,
-            file_name
+            texture_id
         })
     }
     
@@ -49,22 +46,25 @@ impl Texture {
         let a = 255u8;
         let data: [u8; 4] = [r, g, b, a];
         
-        println!("data: {data:?}");
-        let texture_id = Self::create_and_upload_texture(width, height, data.as_ptr() as *const _)?;
+        let texture_id = Self::create_rgba8(width, height, &data)?;
         
         Ok(Self {
             width,
             height,
-            texture_id,
-            file_name: String::from("Auto generated texture")
+            texture_id
         })
     }
 
-    pub fn bind(&self) {
+    pub fn bind(&self, unit: u32) -> Result<(), String> {
+        const MAX_TEXTURE_UNIT: u32 = 31;
+        if unit > MAX_TEXTURE_UNIT {
+            return Err(format!("Texture unit is too big. {unit} > {MAX_TEXTURE_UNIT}"))
+        }
         unsafe {
-            gl::ActiveTexture(gl::TEXTURE0);
+            gl::ActiveTexture(gl::TEXTURE0 + unit);
             gl::BindTexture(gl::TEXTURE_2D, self.texture_id);
         }
+        Ok(())
     }
 
     pub fn unbind(&self) {
@@ -73,7 +73,7 @@ impl Texture {
         }
     }
     
-    fn create_and_upload_texture(width: i32, height: i32, data: *const c_void) -> Result<u32, String> {
+    fn create_rgba8(width: i32, height: i32, data: &[u8]) -> Result<u32, String> {
         let mut texture_id: u32 = 0;
         unsafe {
             gl::GenTextures(1, &mut texture_id);
@@ -83,14 +83,14 @@ impl Texture {
             gl::TexParameteri(
                 gl::TEXTURE_2D,
                 gl::TEXTURE_WRAP_S,
-                gl::CLAMP_TO_BORDER as GLint,
+                gl::REPEAT as GLint,
             );
             gl::TexParameteri(
                 gl::TEXTURE_2D,
                 gl::TEXTURE_WRAP_T,
-                gl::CLAMP_TO_BORDER as GLint,
+                gl::REPEAT as GLint,
             );
-            
+            gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
             gl::TexImage2D(
                 gl::TEXTURE_2D,
                 0,
@@ -100,8 +100,10 @@ impl Texture {
                 0,
                 gl::RGBA,
                 gl::UNSIGNED_BYTE,
-                data,
+                data.as_ptr() as *const c_void,
             );
+            
+            gl::GenerateMipmap(gl::TEXTURE_2D);
             
             let err = gl::GetError();
             if err != gl::NO_ERROR {

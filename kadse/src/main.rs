@@ -287,11 +287,11 @@ impl App for KadseApp {
         }
         
         for pbr_model in state.pbr_models.iter() {
-            pbr_model.texture.borrow().bind();
+            pbr_model.texture.borrow().bind(0).unwrap();
             pbr_model.model.render(camera.projection(), camera);
         }
         
-        state.ground_texture.bind();
+        state.ground_texture.bind(0).unwrap();
         let texture_scale_loc = {
             state.floor.shader_mut().get_uniform_location("texture_scale").unwrap()
         };
@@ -299,7 +299,7 @@ impl App for KadseApp {
         state.floor.render(camera.projection(), camera);
         state.ground_texture.unbind();
 
-        state.bunny_texture.bind();
+        state.bunny_texture.bind(0).unwrap();
         let texture_scale_loc = {
             state.bunny.shader_mut().get_uniform_location("texture_scale").unwrap()
         };
