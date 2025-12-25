@@ -1,7 +1,7 @@
-use crate::renderer::material::Material;
-use crate::{Camera, Renderable, Shader, Transform};
+use crate::renderer::render_object::RenderObject;
 use glm::Vec4;
-use std::ops::DerefMut;
+use crate::{Camera, Shader};
+use crate::renderer::transform::Transform;
 
 pub struct Renderer {
     current_shader: Option<u32>
@@ -22,12 +22,13 @@ impl Renderer {
         
     }
     
-    pub fn render_mesh(
+    pub fn render(
         &mut self,
-        renderable: &Renderable,
-        material: &Material,
+        object: &RenderObject,
         camera: &Camera
     ) {
+        let material = object.material();
+        
         let shader_id = material.shader.id();
         if self.current_shader != Some(shader_id) {
             material.shader.bind();
@@ -35,11 +36,11 @@ impl Renderer {
         }
         
         self.set_camera_uniforms(camera, material.shader.as_ref());
-        self.set_model_uniforms(&renderable.transform(), material.shader.as_ref());
+        self.set_model_uniforms(&object.transform(), material.shader.as_ref());
         
         material.apply();
         
-        renderable.mesh().render();
+        object.mesh().render();
     }
     
     pub fn end_frame(&mut self) {

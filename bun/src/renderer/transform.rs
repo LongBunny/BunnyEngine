@@ -1,9 +1,6 @@
-use crate::renderer::mesh::Mesh;
-use crate::Vertex;
+use std::cell::{Cell, RefCell};
 use glm::{Mat4, Vec3};
-use num_traits::{One, Zero};
-use std::cell::{Cell, Ref, RefCell, RefMut};
-use std::rc::Rc;
+use num_traits::One;
 
 pub struct Transform {
     position: Vec3,
@@ -16,7 +13,7 @@ pub struct Transform {
 
 impl Transform {
     pub fn new(position: Vec3, scale: Vec3, rotation: Vec3) -> Self {
-        let mut result = Self { position, scale, rotation, model_matrix: RefCell::new(Mat4::one()), dirty: Cell::new(false) };
+        let result = Self { position, scale, rotation, model_matrix: RefCell::new(Mat4::one()), dirty: Cell::new(false) };
         result.calculate_model_matrix();
         result
     }
@@ -64,39 +61,5 @@ impl Transform {
         m = glm::ext::rotate(&m, self.rotation.z, glm::vec3(0.0, 0.0, 1.0));
         m = glm::ext::scale(&m, self.scale);
         *self.model_matrix.borrow_mut() = m;
-    }
-}
-
-pub struct Renderable {
-    mesh: Rc<RefCell<Mesh<Vertex>>>,
-    transform: RefCell<Transform>,
-}
-
-impl Renderable {
-    pub fn new(mesh: Rc<RefCell<Mesh<Vertex>>>) -> Self {
-        Self {
-            mesh,
-            transform: RefCell::new(Transform::new(Vec3::zero(), Vec3::one(), Vec3::zero())),
-        }
-    }
-    
-    pub fn with_transform(mesh: Rc<RefCell<Mesh<Vertex>>>, transform: Transform) -> Self {
-        Self { mesh, transform: RefCell::new(transform) }
-    }
-    
-    pub fn transform(&self) -> Ref<'_, Transform> {
-        self.transform.borrow()
-    }
-    
-    pub fn transform_mut(&self) -> RefMut<'_, Transform> {
-        self.transform.borrow_mut()
-    }
-    
-    pub fn mesh(&self) -> Ref<'_, Mesh<Vertex>> {
-        self.mesh.borrow()
-    }
-    
-    pub fn mesh_mut(&self) -> RefMut<'_, Mesh<Vertex>> {
-        self.mesh.borrow_mut()
     }
 }

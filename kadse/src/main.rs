@@ -1,23 +1,22 @@
-use bun::{gl, glm, glm::Vec3, run, App, AppConfig, AppControl, Camera, Mesh, Renderable, Shader, Texture, Transform, Event, Keycode, One, Zero, fastrand};
+use bun::engine::Engine;
+use bun::glm::Vec4;
+use bun::renderer::material::{Material, MaterialProperty};
+use bun::renderer::render_object::RenderObject;
+use bun::runtime::Time;
+use bun::{glm, glm::Vec3, run, App, AppConfig, AppControl, Camera, Event, Keycode, Mesh, Shader, Texture, Transform};
 use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
-use bun::engine::Engine;
-use bun::glm::Vec4;
-use bun::renderer::material::{Material, MaterialProperty};
-use bun::renderer::mesh_data::MeshData;
-use bun::runtime::Time;
-use bun::sdl3::libc::stat;
 
 const DEG_TO_RAD: f32 = PI / 180.0;
 
 
 struct GameState {
     camera: Camera,
-    bunny_mat: Material,
-    bunny_renderable: Renderable,
+    
+    bunny: RenderObject,
     
     speed: f32,
     rot_speed: f32,
@@ -32,14 +31,24 @@ impl GameState {
         )?);
         
         let bunny_texture = Arc::new(Texture::new("kadse/res/textures/gltf_embedded_0.png")?);
-        let bunny_mat = Material {
+        let bunny_mat = Arc::new(Material {
             shader: default_shader.clone(),
             albedo: MaterialProperty::Texture(bunny_texture.clone()),
             ..Default::default()
-        };
-        let bunny_mesh = Rc::new(RefCell::new(Mesh::from_model(PathBuf::from(
+        });
+        
+        let bunny_mesh = Arc::new(Mesh::from_model(PathBuf::from(
             "kadse/res/models/rabbit.obj",
-        ))?));
+        ))?);
+        
+        let bunny_transform = Transform::new(
+            Vec3::new(0.0, 3.0, 12.5),
+            Vec3::new(40.0, 40.0, 40.0),
+            // Vec3::new(0.0, -90f32 * DEG_TO_RAD, 0.0),
+            Vec3::new(0.0, 0.0, 0.0),
+        );
+        
+        let bunny = RenderObject::new(bunny_transform, bunny_mesh.clone(), bunny_mat.clone());
         
         
         
@@ -64,16 +73,6 @@ impl GameState {
         //     PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(4.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_metal_bubbles.clone()},
         //     PbrModel {model: Model::with_transform(cube_mesh.clone(), default_shader.clone(), Transform::new(Vec3::new(7.5, 0.0, 12.5), Vec3::one() * 10.0, Vec3::zero())), texture: tex_cord_woven.clone()},
         // ];
-
-        let bunny = Renderable::with_transform(
-            bunny_mesh.clone(),
-            Transform::new(
-                Vec3::new(0.0, 3.0, 12.5),
-                Vec3::new(40.0, 40.0, 40.0),
-                // Vec3::new(0.0, -90f32 * DEG_TO_RAD, 0.0),
-                Vec3::new(0.0, 0.0, 0.0),
-            ),
-        );
         
         // let mut subdiv_quad_mesh_data = MeshData::subdiv_quad(32);
         // for vertex in subdiv_quad_mesh_data.vertices_mut() {
@@ -102,8 +101,7 @@ impl GameState {
 
         Ok(Self {
             camera,
-            bunny_mat,
-            bunny_renderable: bunny,
+            bunny,
             speed: 7.0,
             rot_speed: 2.0,
             t: 0.0,
@@ -246,14 +244,14 @@ impl App for KadseApp {
         state.camera.set_aspect_ratio(engine.aspect_ratio());
         state.handle_movement(engine, time.dt());
         
-        let pos = state.bunny_renderable.transform().pos();
-        let rot = state.bunny_renderable.transform().rotation();
+        let pos = state.bunny.transform().pos();
+        let rot = state.bunny.transform().rotation();
         state
-            .bunny_renderable
+            .bunny
             .transform_mut()
             .set_rotation(Vec3::new(rot.x, rot.y + 0.02, rot.z));
         state
-            .bunny_renderable
+            .bunny
             .transform_mut()
             .set_pos(Vec3::new(pos.x, glm::sin(time.elapsed_secs() * 2.0) + 2.0 + 1.0, pos.z));
         state.t += time.dt();
@@ -267,9 +265,8 @@ impl App for KadseApp {
         let camera = &state.camera;
 
         
-        renderer.render_mesh(
-            &state.bunny_renderable,
-            &state.bunny_mat,
+        renderer.render(
+            &state.bunny,
             camera
         );
         
