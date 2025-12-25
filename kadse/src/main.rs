@@ -51,18 +51,31 @@ impl GameState {
         let bunny = RenderObject::new(bunny_transform, bunny_mesh.clone(), bunny_mat.clone());
         
         
+        // let cube_mesh = Arc::new(Mesh::from_model(PathBuf::from(
+        //     "kadse/res/models/TestCube/TestCube.obj"
+        // ))?);
         let cube_mesh = Arc::new(Mesh::from_model(PathBuf::from(
-            "kadse/res/models/TestCube/TestCube.obj"
+            "kadse/res/models/sphere.obj"
         ))?);
-        let cube_albedo = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/D_Terracotta.jpg", TextureSpec::albedo())?);
-        let cube_metallic = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/M_Terracotta.png", TextureSpec::data())?);
-        let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/N_Terracotta.jpg", TextureSpec::normal())?);
-        let cube_roughness = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/R_Terracotta.png", TextureSpec::data())?);
+        // let cube_albedo = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/D_Terracotta.jpg", TextureSpec::albedo())?);
+        // let cube_metallic = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/M_Terracotta.png", TextureSpec::data())?);
+        // let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/N_Terracotta.jpg", TextureSpec::normal())?);
+        // let cube_roughness = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/R_Terracotta.png", TextureSpec::data())?);
         
         // let cube_albedo = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_PinkGlass/D_PinkGlass.jpg", TextureSpec::albedo())?);
         // let cube_metallic = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_PinkGlass/M_PinkGlass.jpg", TextureSpec::data())?);
         // let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_PinkGlass/N_PinkGlass.png", TextureSpec::normal())?);
         // let cube_roughness = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_PinkGlass/R_PinkGlass.jpg", TextureSpec::data())?);
+        
+        // let cube_albedo = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_MetalBubbles/D_MetalBubbles.png", TextureSpec::albedo())?);
+        // let cube_metallic = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_MetalBubbles/M_MetalBubbles.png", TextureSpec::data())?);
+        // let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_MetalBubbles/N_MetalBubbles.png", TextureSpec::normal())?);
+        // let cube_roughness = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_MetalBubbles/R_MetalBubbles.png", TextureSpec::data())?);
+        
+        // let cube_albedo = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/D_Wooden.png", TextureSpec::albedo())?);
+        // // let cube_metallic = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/M_", TextureSpec::data())?);
+        // let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/N_Wooden.png", TextureSpec::normal())?);
+        // let cube_roughness = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/R_Wooden.png", TextureSpec::data())?);
         
         let pbr_shader = Arc::new(Shader::new(
             &PathBuf::from("kadse/res/shaders/pbr.vert"),
@@ -70,12 +83,14 @@ impl GameState {
         )?);
         let cube_mat = Arc::new(Material {
             shader: pbr_shader.clone(),
-            albedo: MaterialProperty::Texture(cube_albedo.clone()),
-            // albedo: MaterialProperty::Color(Vec3::new(1.0, 0.0, 1.0)),
-            metallic: MaterialProperty::Texture(cube_metallic.clone()),
-            normal: NormalMap::Texture {texture: cube_normal.clone(), scale: 3.0},
-            // normal: NormalMap::None,
-            roughness: MaterialProperty::Texture(cube_roughness.clone()),
+            // albedo: MaterialProperty::Texture(cube_albedo.clone()),
+            albedo: MaterialProperty::Color(Vec3::new(0.8, 0.589, 0.006)),
+            // metallic: MaterialProperty::Texture(cube_metallic.clone()),
+            metallic: MaterialProperty::Value(1.0),
+            // normal: NormalMap::Texture {texture: cube_normal.clone(), scale: 1.0},
+            normal: NormalMap::None,
+            // roughness: MaterialProperty::Texture(cube_roughness.clone()),
+            roughness: MaterialProperty::Value(0.705),
             ..Default::default()
         });
         let cube = RenderObject::new(

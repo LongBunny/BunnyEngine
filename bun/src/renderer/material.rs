@@ -43,6 +43,14 @@ impl Material {
             texture.bind(1).unwrap();
         }
         
+        if let MaterialProperty::Texture(texture) = &self.roughness {
+            texture.bind(2).unwrap();
+        }
+        
+        if let MaterialProperty::Texture(texture) = &self.metallic {
+            texture.bind(3).unwrap();
+        }
+        
         self.ubo.bind();
         unsafe {
             let location = CString::new("MaterialUBO").unwrap();
@@ -87,9 +95,9 @@ pub struct MaterialUBO {
     albedo_color: Vec4,
     emissive_color: Vec4,
     
-    metallic: f32,
-    roughness: f32,
-    normal_scale: f32,
+    metallic_value: f32,
+    roughness_value: f32,
+    normal_scale_value: f32,
     
     albedo_has_texture: i32,
     normal_has_texture: i32,
@@ -100,8 +108,10 @@ pub struct MaterialUBO {
 
 impl MaterialUBO {
     fn from_material(material: &Material) -> Self {
-        let (albedo_color, albedo_has_texture) = get_material_property(&material.albedo);
-        let (normal_has_texture, normal_scale) = match &material.normal {
+        let (albedo_color, albedo_has_texture) = get_material_property_vec4(&material.albedo);
+        let (roughness_value, roughness_has_texture) = get_material_property_f32(&material.roughness);
+        let (metallic_value, metallic_has_texture) = get_material_property_f32(&material.metallic);
+        let (normal_has_texture, normal_scale_value) = match &material.normal {
             NormalMap::None => (0, 1.0f32),
             NormalMap::Texture { scale, .. } => (1, *scale)
         };
@@ -109,20 +119,21 @@ impl MaterialUBO {
         Self {
             albedo_color,
             emissive_color: Vec4::zero(),
-            metallic: 0.0,
-            roughness: 0.0,
-            normal_scale,
+            metallic_value,
+            roughness_value,
+            normal_scale_value,
             
             albedo_has_texture,
             normal_has_texture,
             emissive_has_texture: 0,
-            metallic_has_texture: 0,
-            roughness_has_texture: 0,
+            metallic_has_texture,
+            roughness_has_texture,
         }
     }
 }
 
-fn get_material_property(property: &MaterialProperty) -> (Vec4, i32) {
+// stupid
+fn get_material_property_vec4(property: &MaterialProperty) -> (Vec4, i32) {
     match property {
         MaterialProperty::Color(c) => {
             (Vec4::new(c.x, c.y, c.z, 1.0), 0)
@@ -130,6 +141,18 @@ fn get_material_property(property: &MaterialProperty) -> (Vec4, i32) {
         MaterialProperty::Texture(_) => {
             (Vec4::new(1.0, 1.0, 1.0, 1.0), 1)
         },
-        _ => panic!("Albedo should never have a value")
+        _ => panic!("Vec4 can be value")
+    }
+}
+
+fn get_material_property_f32(property: &MaterialProperty) -> (f32, i32) {
+    match property {
+        MaterialProperty::Value(c) => {
+            (*c, 0)
+        }
+        MaterialProperty::Texture(_) => {
+            (0.0, 1)
+        },
+        _ => panic!("f32 should never have a color")
     }
 }
