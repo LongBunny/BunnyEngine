@@ -1,13 +1,12 @@
-use std::collections::HashMap;
-use std::iter::Enumerate;
-use std::num::NonZeroU32;
-use crate::renderer::buffer::{Buffer, EBO, VAO, VBO};
-use crate::renderer::vertex::Vertex;
-use glm::{IVec3, Vec2, Vec3};
-use std::path::Path;
-use std::ptr::{null, NonNull};
-use std::str::FromStr;
+use crate::renderer::buffer::{EBO, VBO};
 use crate::renderer::mesh_data::MeshData;
+use crate::renderer::vertex::Vertex;
+use crate::renderer::vertex_array::VAO;
+use glm::{IVec3, Vec2, Vec3};
+use std::collections::HashMap;
+use std::path::Path;
+use std::ptr::null;
+use std::str::FromStr;
 
 #[allow(dead_code)]
 pub struct Mesh {

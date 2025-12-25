@@ -1,9 +1,10 @@
 pub mod buffer;
-pub mod vertex;
-pub mod shader;
-pub mod mesh;
-pub mod model;
 pub mod camera;
-pub mod texture;
-pub mod mesh_data;
 pub mod material;
+pub mod mesh;
+pub mod mesh_data;
+pub mod model;
+pub mod shader;
+pub mod texture;
+pub mod vertex;
+pub mod vertex_array;
