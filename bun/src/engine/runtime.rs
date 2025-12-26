@@ -2,7 +2,13 @@ use crate::engine::engine::Engine;
 use sdl3::event::Event;
 use std::ffi::{c_void, CStr};
 use std::ptr::null;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
+use image::Frame;
+use crate::renderer::frame_buffer::Framebuffer;
+use crate::renderer::mesh_data::MeshData;
+use crate::renderer::texture::{TextureSpec, TextureUsage};
+use crate::{Mesh, Shader, Texture};
 
 pub enum AppControl {
     Continue,
@@ -75,22 +81,42 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
     window
         .gl_make_current(&gl_context)
         .map_err(|e| e.to_string())?;
-
+    
     unsafe {
         gl::load_with(|s| video_subsystem.gl_get_proc_address(s).unwrap() as *const c_void);
+        
+        let version = CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8);
+        println!("OpenGL version: {}", version.to_string_lossy());
+        
+        gl::Enable(gl::DEBUG_OUTPUT);
+        gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
+        gl::DebugMessageCallback(Some(debug_callback), null());
+    }
+    
+    unsafe {
         gl::Viewport(0, 0, config.width as i32, config.height as i32);
         gl::Enable(gl::DEPTH_TEST);
         gl::Enable(gl::MULTISAMPLE);
         gl::Enable(gl::LINE_SMOOTH);
         gl::Enable(gl::CULL_FACE);
-        
-        gl::Enable(gl::DEBUG_OUTPUT);
-        gl::Enable(gl::DEBUG_OUTPUT_SYNCHRONOUS);
-        gl::DebugMessageCallback(Some(debug_callback), null());
-
-        let version = CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8);
-        println!("OpenGL version: {}", version.to_string_lossy());
     }
+    
+    let framebuffer = Framebuffer::new(config.width as usize, config.height as usize)?;
+    framebuffer.bind();
+    
+    unsafe {
+        gl::Viewport(0, 0, config.width as i32, config.height as i32);
+        gl::Enable(gl::DEPTH_TEST);
+        gl::Enable(gl::MULTISAMPLE);
+        gl::Enable(gl::LINE_SMOOTH);
+        gl::Enable(gl::CULL_FACE);
+    }
+    
+    let screen_quad = Mesh::from_mesh_data(&MeshData::screen_quad());
+    let screen_shader = Shader::from_source(
+        include_str!("../res/shaders/screen.vert").to_string(),
+        include_str!("../res/shaders/screen.frag").to_string()
+    )?;
 
     let mut engine = Engine::new(window, config.width as f32 / config.height as f32);
     let mut event_pump = sdl_context.event_pump().map_err(|e| e.to_string())?;
@@ -122,7 +148,18 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
         last_frame = now;
 
         app.update(&mut engine, Time { dt, elapsed_secs });
+        
+        framebuffer.bind();
         app.render(&mut engine);
+        
+        
+        Framebuffer::bind_default();
+        unsafe {
+            gl::Viewport(0, 0, config.width as i32, config.height as i32);
+            gl::Disable(gl::DEPTH_TEST);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+        }
+        engine.renderer.render_screen_quad(&screen_quad, &screen_shader, framebuffer.screen_texture_id());
         
         engine.window.gl_swap_window();
 

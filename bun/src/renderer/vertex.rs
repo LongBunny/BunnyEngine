@@ -34,3 +34,28 @@ impl VertexLayout for Vertex {
     }
 }
 
+
+
+#[derive(Debug)]
+#[repr(C)]
+pub struct ScreenVertex {
+    pub v: Vec2,
+    pub vt: Vec2,
+}
+
+impl ScreenVertex {
+    pub fn new(v: Vec2, vt: Vec2) -> Self {
+        ScreenVertex {
+            v,
+            vt,
+        }
+    }
+}
+
+
+impl VertexLayout for ScreenVertex {
+    fn setup_attributes(vao: &VAO) {
+        vao.vertex_attrib_pointer(0, 2, 4, 0);
+        vao.vertex_attrib_pointer(1, 2, 4, 2);
+    }
+}

@@ -1,5 +1,6 @@
 pub mod buffer;
 pub mod camera;
+pub mod frame_buffer;
 pub mod material;
 pub mod mesh;
 pub mod mesh_data;

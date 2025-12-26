@@ -63,6 +63,26 @@ impl Texture {
             texture_id
         })
     }
+    
+    pub fn empty(width: usize, height: usize, spec: TextureSpec) -> Result<Self, String> {
+        let width = width as i32;
+        let height = height as i32;
+        let data = vec![0; (width * height * 4) as usize];
+        let image_data = ImageData {
+            width,
+            height,
+            channels: 4,
+            data
+        };
+        
+        let texture_id = Self::create_texture(image_data, spec)?;
+        
+        Ok(Self {
+            width,
+            height,
+            texture_id
+        })
+    }
 
     pub fn bind(&self, unit: u32) -> Result<(), String> {
         const MAX_TEXTURE_UNIT: u32 = 31;
@@ -109,12 +129,16 @@ impl Texture {
             
             let err = gl::GetError();
             if err != gl::NO_ERROR {
-                return Err(format!("Error loading texture: {}", err));
+                return Err(format!("Error loading texture: {:#X}", err));
             }
         }
         
         Ok(texture_id)
     }
+    
+    pub fn id(&self) -> u32 { self.texture_id }
+    pub fn width(&self) -> i32 { self.width }
+    pub fn height(&self) -> i32 { self.height }
 }
 
 impl Drop for Texture {

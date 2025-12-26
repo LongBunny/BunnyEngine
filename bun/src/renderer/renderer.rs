@@ -1,7 +1,10 @@
+use std::sync::Arc;
 use crate::renderer::render_object::RenderObject;
 use crate::renderer::transform::Transform;
-use crate::{Camera, Shader};
+use crate::{Camera, Mesh, Shader};
 use glm::Vec4;
+use crate::renderer::mesh_data::MeshData;
+use crate::renderer::vertex::ScreenVertex;
 
 pub struct Renderer {
     current_shader: Option<u32>
@@ -16,10 +19,10 @@ impl Renderer {
     
     pub fn begin_frame(&mut self, clear_color: Vec4) {
         unsafe {
+            gl::Enable(gl::DEPTH_TEST);
             gl::ClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
-        
     }
     
     pub fn render(
@@ -42,6 +45,15 @@ impl Renderer {
         material.apply();
         
         object.mesh().render();
+    }
+    
+    pub fn render_screen_quad(&mut self, screen_quad: &Mesh<ScreenVertex>, screen_shader: &Shader, screen_buffer_texture_id: u32) {
+        screen_shader.bind();
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE0);
+            gl::BindTexture(gl::TEXTURE_2D, screen_buffer_texture_id);
+        }
+        screen_quad.render();
     }
     
     pub fn end_frame(&mut self) {

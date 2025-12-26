@@ -1,4 +1,4 @@
-use crate::renderer::vertex::VertexLayout;
+use crate::renderer::vertex::{ScreenVertex, VertexLayout};
 use crate::{Mesh, Vertex};
 use glm::{dot, normalize, Vec2, Vec3};
 use std::marker::PhantomData;
@@ -281,6 +281,33 @@ impl MeshData<Vertex> {
         let mut indices = vec![];
         
         calculate_tangents(&mut vertices, &mut indices);
+        
+        Self { vertices, indices, _marker: PhantomData }
+    }
+}
+
+impl MeshData<ScreenVertex> {
+    pub fn screen_quad() -> Self {
+        let vertices: Vec<ScreenVertex> = vec![
+            ScreenVertex {
+                v:  Vec2::new(-1.0,  1.0),
+                vt: Vec2::new(0.0,  1.0),
+            },
+            ScreenVertex {
+                v:  Vec2::new(-1.0, -1.0),
+                vt: Vec2::new(0.0,  0.0),
+            },
+            ScreenVertex {
+                v:  Vec2::new( 1.0, -1.0),
+                vt: Vec2::new(1.0,  0.0),
+            },
+            ScreenVertex {
+                v:  Vec2::new( 1.0,  1.0),
+                vt: Vec2::new(1.0,  1.0),
+            },
+        ];
+        
+        let indices: Vec<u32> = vec![0, 1, 2, 0, 2, 3];
         
         Self { vertices, indices, _marker: PhantomData }
     }
