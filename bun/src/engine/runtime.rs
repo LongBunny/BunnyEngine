@@ -1,10 +1,12 @@
 use crate::engine::engine::Engine;
-use sdl3::event::Event;
+use sdl3::event::{Event, WindowEvent};
 use std::ffi::{c_void, CStr};
+use std::path::PathBuf;
 use std::ptr::null;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use image::Frame;
+use sdl3::keyboard::Keycode;
 use crate::renderer::frame_buffer::Framebuffer;
 use crate::renderer::mesh_data::MeshData;
 use crate::renderer::texture::{TextureSpec, TextureUsage};
@@ -58,7 +60,7 @@ impl Time {
 }
 
 
-pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
+pub fn run<A: App>(mut config: AppConfig, mut app: A) -> Result<(), String> {
     let sdl_context = sdl3::init().map_err(|e| e.to_string())?;
     let video_subsystem = sdl_context.video().map_err(|e| e.to_string())?;
 
@@ -99,24 +101,14 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
         gl::Enable(gl::MULTISAMPLE);
         gl::Enable(gl::LINE_SMOOTH);
         gl::Enable(gl::CULL_FACE);
+        gl::Disable(gl::FRAMEBUFFER_SRGB);
     }
     
-    let framebuffer = Framebuffer::new(config.width as usize, config.height as usize)?;
+    let mut framebuffer = Framebuffer::new(config.width as usize, config.height as usize)?;
     framebuffer.bind();
     
-    unsafe {
-        gl::Viewport(0, 0, config.width as i32, config.height as i32);
-        gl::Enable(gl::DEPTH_TEST);
-        gl::Enable(gl::MULTISAMPLE);
-        gl::Enable(gl::LINE_SMOOTH);
-        gl::Enable(gl::CULL_FACE);
-    }
-    
     let screen_quad = Mesh::from_mesh_data(&MeshData::screen_quad());
-    let screen_shader = Shader::from_source(
-        include_str!("../res/shaders/screen.vert").to_string(),
-        include_str!("../res/shaders/screen.frag").to_string()
-    )?;
+    let screen_shader = Shader::new(&PathBuf::from("bun/src/res/shaders/screen.vert"), &PathBuf::from("bun/src/res/shaders/screen.frag"))?;
 
     let mut engine = Engine::new(window, config.width as f32 / config.height as f32);
     let mut event_pump = sdl_context.event_pump().map_err(|e| e.to_string())?;
@@ -129,10 +121,28 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
     let mut last_frame = Instant::now();
     'running: loop {
         for event in event_pump.poll_iter() {
-            if matches!(event, Event::Quit { .. }) {
-                engine.request_close();
+            
+            match event {
+                Event::Quit { .. } => {
+                    engine.request_close();
+                }
+                Event::Window {win_event: WindowEvent::Resized(new_width, new_height), ..} => {
+                    config.width = new_width as u32;
+                    config.height = new_height as u32;
+                    framebuffer.resize(new_width as usize, new_height as usize);
+                    unsafe {
+                        gl::Viewport(0, 0, new_width, new_height);
+                    }
+                }
+                Event::KeyDown {keycode: Some(Keycode::R), ..} => {
+                    match screen_shader.reload() {
+                        Ok(_) => println!("screen_shader reloaded!"),
+                        Err(e) => eprintln!("screen_shader compilation failed: {}", e),
+                    }
+                }
+                _ => {}
             }
-
+            
             engine.process_event(&event);
 
             if let AppControl::Exit = app.handle_event(&mut engine, &event) {
@@ -155,7 +165,6 @@ pub fn run<A: App>(config: AppConfig, mut app: A) -> Result<(), String> {
         
         Framebuffer::bind_default();
         unsafe {
-            gl::Viewport(0, 0, config.width as i32, config.height as i32);
             gl::Disable(gl::DEPTH_TEST);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }

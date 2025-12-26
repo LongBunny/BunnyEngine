@@ -18,6 +18,7 @@ struct GameState {
     
     bunny: RenderObject,
     cube: RenderObject,
+    sphere: RenderObject,
     ground: RenderObject,
     
     speed: f32,
@@ -32,10 +33,18 @@ impl GameState {
             &PathBuf::from("kadse/res/shaders/default.frag"),
         )?);
         
+        let pbr_shader = Arc::new(Shader::new(
+            &PathBuf::from("kadse/res/shaders/pbr.vert"),
+            &PathBuf::from("kadse/res/shaders/pbr.frag"),
+        )?);
+        
         let bunny_texture = Arc::new(Texture::new("kadse/res/textures/gltf_embedded_0.png", TextureSpec::albedo())?);
         let bunny_mat = Arc::new(Material {
-            shader: default_shader.clone(),
+            shader: pbr_shader.clone(),
             albedo: MaterialProperty::Texture(bunny_texture.clone()),
+            metallic: MaterialProperty::Value(0.0),
+            roughness: MaterialProperty::Value(1.0),
+            normal: NormalMap::None,
             ..Default::default()
         });
         
@@ -56,9 +65,9 @@ impl GameState {
         let cube_mesh = Arc::new(Mesh::from_model(PathBuf::from(
             "kadse/res/models/TestCube/TestCube.obj"
         ))?);
-        // let cube_mesh = Arc::new(Mesh::from_model(PathBuf::from(
-        //     "kadse/res/models/sphere.obj"
-        // ))?);
+        let sphere_mesh = Arc::new(Mesh::from_model(PathBuf::from(
+            "kadse/res/models/sphere.obj"
+        ))?);
         // let cube_albedo = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/D_Terracotta.jpg", TextureSpec::albedo())?);
         // let cube_metallic = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/M_Terracotta.png", TextureSpec::data())?);
         // let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Terracotta/N_Terracotta.jpg", TextureSpec::normal())?);
@@ -78,11 +87,6 @@ impl GameState {
         // let cube_metallic = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/M_", TextureSpec::data())?);
         let cube_normal = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/N_Wooden.png", TextureSpec::normal())?);
         let cube_roughness = Arc::new(Texture::new("kadse/res/models/TestCube/Mat_Wooden/R_Wooden.png", TextureSpec::data())?);
-        
-        let pbr_shader = Arc::new(Shader::new(
-            &PathBuf::from("kadse/res/shaders/pbr.vert"),
-            &PathBuf::from("kadse/res/shaders/pbr.frag"),
-        )?);
         
         let cube_mat = Arc::new(Material {
             shader: pbr_shader.clone(),
@@ -104,6 +108,24 @@ impl GameState {
             ),
             cube_mesh.clone(),
             cube_mat.clone(),
+        );
+        
+        let sphere_mat = Arc::new(Material {
+            shader: pbr_shader.clone(),
+            albedo: MaterialProperty::Color(Vec3::one()),
+            metallic: MaterialProperty::Value(1.0),
+            normal: NormalMap::None,
+            roughness: MaterialProperty::Value(0.13),
+            ..Default::default()
+        });
+        let sphere = RenderObject::new(
+            Transform::new(
+                Vec3::new(2.5, 0.5, 5.0),
+                Vec3::one() * 0.75,
+                Vec3::zero()
+            ),
+            sphere_mesh.clone(),
+            sphere_mat.clone(),
         );
         
         let ground_albedo = Arc::new(Texture::new("kadse/res/textures/rocky_ground/rocky_terrain_diff_4k.jpg", TextureSpec::albedo())?);
@@ -142,6 +164,7 @@ impl GameState {
             camera,
             bunny,
             cube,
+            sphere,
             ground,
             speed: 7.0,
             rot_speed: 2.0,
@@ -153,8 +176,8 @@ impl GameState {
         println!("Reloading shaders");
         
         match self.cube.material().shader.reload() {
-            Ok(_) => println!("cube.material().shader reloaded!"),
-            Err(e) => eprintln!("cube.material().shader compilation failed: {}", e),
+            Ok(_) => println!("pbr shader reloaded!"),
+            Err(e) => eprintln!("pbr shader compilation failed: {}", e),
         }
     }
 
@@ -259,7 +282,7 @@ impl App for KadseApp {
             }
             Event::MouseWheel { y, .. } => {
                 let state = self.state_mut();
-                state.speed = (state.speed + (*y as f32 * 10.0 * (1.0 / 60.0))).max(0.1);
+                state.speed = (state.speed + (*y * 10.0 * (1.0 / 60.0))).max(0.1);
                 println!("speed: {}", state.speed);
                 AppControl::Continue
             }
@@ -309,33 +332,15 @@ impl App for KadseApp {
             camera
         );
         
+         renderer.render(
+            &state.sphere,
+            camera
+        );
+        
         renderer.render(
             &state.ground,
             camera
         );
-        
-        
-        // for pbr_model in state.pbr_models.iter_mut() {
-        //     pbr_model.texture.borrow().bind(0).unwrap();
-        //     pbr_model.model.render(camera.projection(), camera);
-        // }
-        //
-        // state.ground_texture.bind(0).unwrap();
-        // let texture_scale_loc = {
-        //     state.floor.shader().get_uniform_location("texture_scale").unwrap()
-        // };
-        // state.floor.shader().set_uniform(texture_scale_loc, 1.0);
-        // state.floor.render(camera.projection(), camera);
-        // state.ground_texture.unbind();
-        //
-        // state.bunny_texture.bind(0).unwrap();
-        // let texture_scale_loc = {
-        //     state.bunny.shader().get_uniform_location("texture_scale").unwrap()
-        // };
-        // state.bunny.shader().set_uniform(texture_scale_loc, 1.0);
-        // state.bunny.render(camera.projection(), camera);
-        // state.bunny_texture.unbind();
-        
         
         renderer.end_frame();
         

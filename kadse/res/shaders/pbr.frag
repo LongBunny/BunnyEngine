@@ -33,8 +33,19 @@ layout(std140, binding = 2) uniform MaterialUBO {
 out vec4 out_col;
 
 
-vec3 directional_light = vec3(1.0, -1.0, 1.0);
-vec3 light_color = vec3(1.0);
+// midday sun
+//vec3 directional_light = normalize(vec3(0.3, -1.0, 0.2));
+//vec3 light_color = vec3(20.0);
+
+// late afternoon sun
+//vec3 directional_light = normalize(vec3(-0.8, -0.6, 0.2));
+//vec3 light_color = vec3(15.0);
+
+// rim light
+vec3 directional_light = normalize(vec3(-1.0, -0.4, 0.0));
+vec3 light_color = vec3(10.0);
+
+
 vec3 specular_color = vec3(1.0);
 
 vec3 fresnel_schlick(float cos_theta, vec3 F0) {
@@ -72,6 +83,7 @@ void main() {
     vec3 albedo = albedo_has_texture == 1
     ? (texture(tex_albedo, uv) * frag_col).xyz
     : (albedo_color * frag_col).xyz;
+    albedo = clamp(albedo, 0.0, 0.8);
 
     vec3 N = normalize(frag_tbn[2]);
     if (normal_has_texture == 1) {
@@ -115,8 +127,8 @@ void main() {
 
     // fake IBL
     // diffuse ambient
-    vec3 sky_color    = vec3(0.6, 0.7, 1.0);
-    vec3 ground_color = vec3(0.2, 0.15, 0.1);
+    vec3 sky_color    = vec3(0.25, 0.3, 0.4);
+    vec3 ground_color = vec3(0.05, 0.04, 0.03);
     float hemi = N.y * 0.5 + 0.5;
     vec3 ambient_diffuse =
     mix(ground_color, sky_color, hemi) * albedo * (1.0 - metallic);
@@ -128,6 +140,4 @@ void main() {
 
     // final
     out_col = vec4(Lo + ambient_diffuse + ambient_specular, 1.0);
-
-    out_col = vec4(pow(out_col.xyz, vec3(1.0 / 2.2)), 1.0);
 }

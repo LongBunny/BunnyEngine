@@ -63,7 +63,6 @@ impl Material {
                 self.ubo.buffer_data(&[ubo_data]);
             }
         }
-       
         
         if let Some(loc) = self.shader.get_uniform_location("specular_intensity") {
             self.shader.set_uniform(loc, 1.0);

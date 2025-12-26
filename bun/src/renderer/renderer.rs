@@ -20,6 +20,7 @@ impl Renderer {
     pub fn begin_frame(&mut self, clear_color: Vec4) {
         unsafe {
             gl::Enable(gl::DEPTH_TEST);
+            // gl::Disable(gl::FRAMEBUFFER_SRGB);
             gl::ClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
@@ -49,6 +50,8 @@ impl Renderer {
     
     pub fn render_screen_quad(&mut self, screen_quad: &Mesh<ScreenVertex>, screen_shader: &Shader, screen_buffer_texture_id: u32) {
         screen_shader.bind();
+        self.current_shader = Some(screen_shader.id());
+        
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0);
             gl::BindTexture(gl::TEXTURE_2D, screen_buffer_texture_id);
